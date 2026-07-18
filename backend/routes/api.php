@@ -8,8 +8,11 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use Illuminate\Support\Facades\Route;
 
+// ==========================================
 // RUTAS PÚBLICAS
+// ==========================================
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register']);  // ← NUEVO
 
 Route::get('/categorias', [CategoriaController::class, 'index']);
 Route::get('/productos', [ProductoController::class, 'index']);
@@ -28,19 +31,25 @@ Route::get('/pedidos/tracking/{codigo}', [PedidoController::class, 'buscarPorTra
 Route::get('/pedidos/publico/{codigo}', [PedidoController::class, 'pedidoPublico']);
 Route::post('/pedidos/{codigo}/comprobante', [PedidoController::class, 'subirComprobante']);
 
-
-// RUTAS PROTEGIDAS
+// ==========================================
+// RUTAS PROTEGIDAS (requieren autenticación)
+// ==========================================
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
 
+    // Pedidos - acceso para clientes y personal
     Route::get('/pedidos', [PedidoController::class, 'index']);
+    Route::post('/pedidos', [PedidoController::class, 'store']);
     Route::patch('/pedidos/{pedido}/estado', [PedidoController::class, 'updateEstado']);
 
     Route::get('/admin/comprobantes', [PedidoController::class, 'listarComprobantes']);
     Route::patch('/admin/comprobantes/{pedidoId}/verificar', [PedidoController::class, 'verificarComprobante']);
 
+    // ==========================================
+    // RUTAS DE ADMIN (middleware es.admin)
+    // ==========================================
     Route::middleware('es.admin')->group(function () {
         Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);

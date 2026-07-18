@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ShoppingCart,
   Menu,
@@ -9,140 +10,437 @@ import {
   MapPin,
   Phone,
   PackageSearch,
+  LogIn,
+  UserPlus,
+  User,
+  LogOut,
 } from 'lucide-react'
+
 import useCarritoStore from '../store/carritoStore'
-import { useState } from 'react'
-import logoRooster from '../assets/logo.jpeg'
+import useAuthStore from '../store/authStore'
+import logoRooster from '../assets/logodef.jpeg'
 
 const navItems = [
-  { path: '/', label: 'Inicio', icon: Home },
-  { path: '/nosotros', label: 'Nosotros', icon: Users },
-  { path: '/menu', label: 'Menú', icon: Pizza },
-  { path: '/ubicacion', label: 'Ubicación', icon: MapPin },
-  { path: '/contacto', label: 'Contacto', icon: Phone },
-  { path: '/estado-pedido', label: 'Estado pedido', icon: PackageSearch },
+  {
+    path: '/',
+    label: 'Inicio',
+    icon: Home,
+  },
+  {
+    path: '/nosotros',
+    label: 'Nosotros',
+    icon: Users,
+  },
+  {
+    path: '/menu',
+    label: 'Menú',
+    icon: Pizza,
+  },
+  {
+    path: '/ubicacion',
+    label: 'Ubicación',
+    icon: MapPin,
+  },
+  {
+    path: '/contacto',
+    label: 'Contacto',
+    icon: Phone,
+  },
+  {
+    path: '/estado-pedido',
+    label: 'Estado pedido',
+    icon: PackageSearch,
+  },
 ]
 
 export default function NavbarPublico() {
+  const navigate = useNavigate()
   const [menuAbierto, setMenuAbierto] = useState(false)
-  const cantidadItems = useCarritoStore((state) => state.obtenerCantidadItems())
+
+  const cantidadItems = useCarritoStore(
+    (state) => state.obtenerCantidadItems()
+  )
+
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
+
+  const isAuthenticated = Boolean(user)
+
+  const nombreUsuario =
+    user?.name ||
+    user?.nombre ||
+    'Usuario'
+
+  const cerrarMenu = () => {
+    setMenuAbierto(false)
+  }
+
+  const handleLogout = () => {
+    cerrarMenu()
+    logout()
+    navigate('/', { replace: true })
+  }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-[9999] bg-black/35 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3 shrink-0 group">
+    <nav
+      className="
+        fixed left-0 right-0 top-0
+        z-[9999]
+        border-b border-white/10
+        bg-black/35
+        shadow-lg shadow-black/30
+        backdrop-blur-xl
+      "
+    >
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+        {/* LOGO */}
+        <Link
+          to="/"
+          onClick={cerrarMenu}
+          className="group flex shrink-0 items-center gap-3"
+        >
           <img
             src={logoRooster}
-            alt="Rooster"
-            className="w-11 h-11 rounded-full object-cover border border-white/20 group-hover:border-[#F5A300]/50 transition-colors"
+            alt="Logo Rooster"
+            className="
+              h-11 w-11
+              rounded-full
+              border border-white/20
+              object-cover
+              transition-colors
+              group-hover:border-[#F5A300]/50
+            "
           />
 
-          <span className="flex items-center leading-none text-xl sm:text-2xl font-black tracking-tight">
-            <span className="text-white">ROOSTER</span>
-            <span className="text-[#F5A300]">PIZZA</span>
+          <span className="flex items-center text-xl font-black leading-none tracking-tight sm:text-2xl">
+            <span className="text-white">
+              ROOSTER
+            </span>
+
+            <span className="text-[#F5A300]">
+              PIZZA
+            </span>
           </span>
         </Link>
 
-        <div className="hidden lg:flex items-center gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className="group relative px-3 py-2 rounded-lg flex items-center gap-2 text-white/90 hover:text-[#F5A300] transition-all duration-200"
-            >
-              <item.icon className="w-4 h-4 transition-colors" />
-              <span className="font-medium text-sm transition-colors">
-                {item.label}
-              </span>
+        {/* ENLACES DE ESCRITORIO */}
+        <div className="hidden items-center gap-1 lg:flex">
+          {navItems.map((item) => {
+            const Icono = item.icon
 
-              <span className="absolute bottom-0 left-1/2 h-[2px] w-0 bg-[#F5A300] transition-all duration-300 group-hover:w-full group-hover:left-0"></span>
-            </Link>
-          ))}
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className="
+                  group relative
+                  flex items-center gap-2
+                  rounded-lg
+                  px-3 py-2
+                  text-white/90
+                  transition-all duration-200
+                  hover:text-[#F5A300]
+                "
+              >
+                <Icono className="h-4 w-4" />
+
+                <span className="text-sm font-medium">
+                  {item.label}
+                </span>
+
+                <span
+                  className="
+                    absolute bottom-0 left-1/2
+                    h-[2px] w-0
+                    bg-[#F5A300]
+                    transition-all duration-300
+                    group-hover:left-0
+                    group-hover:w-full
+                  "
+                />
+              </Link>
+            )
+          })}
         </div>
 
+        {/* ACCIONES */}
         <div className="flex items-center gap-3">
           <Link
             to="/menu"
-            className="hidden xl:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-lg hover:shadow-[#E4002B]/40 rounded-lg font-bold text-sm text-white transition-all duration-300 hover:scale-105"
+            className="
+              hidden items-center gap-2
+              rounded-lg
+              bg-gradient-to-r from-[#E4002B] to-[#F5A300]
+              px-4 py-2
+              text-sm font-bold text-white
+              transition-all duration-300
+              hover:scale-105
+              hover:shadow-lg
+              hover:shadow-[#E4002B]/40
+              xl:flex
+            "
           >
-            <span>Ordenar ahora</span>
+            Ordenar ahora
           </Link>
 
           <Link
             to="/carrito"
-            className="relative p-2 hover:bg-white/10 rounded-lg transition-colors"
+            aria-label="Ver carrito"
+            className="relative rounded-lg p-2 transition-colors hover:bg-white/10"
           >
-            <ShoppingCart className="w-5 h-5 text-white/90 hover:text-[#F5A300] transition-colors" />
+            <ShoppingCart className="h-5 w-5 text-white/90 transition-colors hover:text-[#F5A300]" />
 
             {cantidadItems > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#E4002B] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-lg shadow-black/50">
+              <span
+                className="
+                  absolute -right-1 -top-1
+                  flex h-5 w-5 items-center justify-center
+                  rounded-full
+                  bg-[#E4002B]
+                  text-[10px] font-bold text-white
+                  shadow-lg shadow-black/50
+                "
+              >
                 {cantidadItems}
               </span>
             )}
           </Link>
 
+          {/* AUTENTICACIÓN DE ESCRITORIO */}
+          <div className="hidden items-center gap-2 lg:flex">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-sm text-white/60">
+                  <User className="h-4 w-4" />
+                  {nombreUsuario}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="
+                    flex items-center gap-1
+                    rounded-lg
+                    px-3 py-1.5
+                    text-sm text-white/60
+                    transition-colors
+                    hover:bg-white/10
+                    hover:text-[#E4002B]
+                  "
+                >
+                  <LogOut className="h-4 w-4" />
+                  Salir
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="
+                    flex items-center gap-1
+                    rounded-lg
+                    px-4 py-2
+                    text-sm font-medium text-white/80
+                    transition-colors
+                    hover:bg-white/10
+                    hover:text-white
+                  "
+                >
+                  <LogIn className="h-4 w-4" />
+                  Iniciar sesión
+                </Link>
+
+                <Link
+                  to="/register"
+                  className="
+                    flex items-center gap-1
+                    rounded-lg
+                    bg-gradient-to-r from-[#E80000] to-[#FF6B00]
+                    px-4 py-2
+                    text-sm font-bold text-white
+                    transition-all
+                    hover:shadow-lg
+                    hover:shadow-[#E80000]/40
+                  "
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Registrarse
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* BOTÓN MÓVIL */}
           <button
             type="button"
-            onClick={() => setMenuAbierto((prev) => !prev)}
-            className="lg:hidden relative z-[10000] p-2 hover:bg-white/10 rounded-lg transition-colors"
+            onClick={() => setMenuAbierto((estado) => !estado)}
+            aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
+            className="relative z-[10000] rounded-lg p-2 transition-colors hover:bg-white/10 lg:hidden"
           >
             {menuAbierto ? (
-              <X className="w-7 h-7 text-white" />
+              <X className="h-7 w-7 text-white" />
             ) : (
-              <Menu className="w-7 h-7 text-white" />
+              <Menu className="h-7 w-7 text-white" />
             )}
           </button>
         </div>
       </div>
 
+      {/* FONDO DEL MENÚ MÓVIL */}
       {menuAbierto && (
-        <div
-          onClick={() => setMenuAbierto(false)}
-          className="fixed inset-0 top-[72px] bg-black/40 backdrop-blur-sm lg:hidden"
+        <button
+          type="button"
+          aria-label="Cerrar menú"
+          onClick={cerrarMenu}
+          className="fixed inset-0 top-[68px] bg-black/40 backdrop-blur-sm lg:hidden"
         />
       )}
 
+      {/* MENÚ MÓVIL */}
       <div
-        className={`lg:hidden fixed top-[72px] left-0 right-0 z-[9999] bg-black/90 backdrop-blur-xl border-t border-white/10 border-b border-white/10 p-4 space-y-2 transition-all duration-300 ${
-          menuAbierto
-            ? 'opacity-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 -translate-y-4 pointer-events-none'
-        }`}
+        className={`
+          fixed left-0 right-0 top-[68px]
+          z-[9999]
+          space-y-2
+          border-b border-t border-white/10
+          bg-black/95
+          p-4
+          backdrop-blur-xl
+          transition-all duration-300
+          lg:hidden
+          ${
+            menuAbierto
+              ? 'translate-y-0 opacity-100 pointer-events-auto'
+              : '-translate-y-4 opacity-0 pointer-events-none'
+          }
+        `}
       >
-        {navItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            onClick={() => setMenuAbierto(false)}
-            className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
-          >
-            <item.icon className="w-5 h-5 text-[#F5A300]" />
-            <span className="font-medium text-white">{item.label}</span>
-          </Link>
-        ))}
+        {navItems.map((item) => {
+          const Icono = item.icon
+
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={cerrarMenu}
+              className="flex items-center gap-4 rounded-lg px-4 py-3 transition-colors hover:bg-white/10"
+            >
+              <Icono className="h-5 w-5 text-[#F5A300]" />
+
+              <span className="font-medium text-white">
+                {item.label}
+              </span>
+            </Link>
+          )
+        })}
 
         <Link
           to="/menu"
-          onClick={() => setMenuAbierto(false)}
-          className="flex items-center justify-center gap-2 w-full mt-2 px-5 py-3 bg-gradient-to-r from-[#E4002B] to-[#F5A300] rounded-lg font-bold text-sm text-white"
+          onClick={cerrarMenu}
+          className="
+            mt-2 flex w-full items-center justify-center gap-2
+            rounded-lg
+            bg-gradient-to-r from-[#E4002B] to-[#F5A300]
+            px-5 py-3
+            text-sm font-bold text-white
+          "
         >
           Ordenar ahora
         </Link>
 
         <Link
           to="/carrito"
-          onClick={() => setMenuAbierto(false)}
-          className="flex items-center justify-center gap-2 w-full px-5 py-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 text-white/90 transition-colors"
+          onClick={cerrarMenu}
+          className="
+            flex w-full items-center justify-center gap-2
+            rounded-lg
+            border border-white/10
+            bg-white/5
+            px-5 py-3
+            text-white/90
+            transition-colors
+            hover:bg-white/10
+          "
         >
-          <ShoppingCart className="w-4 h-4" />
-          <span>Ver carrito</span>
+          <ShoppingCart className="h-4 w-4" />
+
+          <span>
+            Ver carrito
+          </span>
 
           {cantidadItems > 0 && (
-            <span className="bg-[#E4002B] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#E4002B] text-xs font-bold text-white">
               {cantidadItems}
             </span>
           )}
         </Link>
+
+        {/* AUTENTICACIÓN MÓVIL */}
+        <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+          {isAuthenticated ? (
+            <>
+              <div className="flex items-center px-4 py-2 text-sm text-white/60">
+                <span className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {nombreUsuario}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="
+                  flex w-full items-center justify-center gap-2
+                  rounded-lg
+                  border border-white/10
+                  bg-white/5
+                  px-5 py-3
+                  text-white/90
+                  transition-colors
+                  hover:bg-red-500/20
+                "
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                onClick={cerrarMenu}
+                className="
+                  flex w-full items-center justify-center gap-2
+                  rounded-lg
+                  border border-white/10
+                  bg-white/5
+                  px-5 py-3
+                  text-white/90
+                  transition-colors
+                  hover:bg-white/10
+                "
+              >
+                <LogIn className="h-4 w-4" />
+                Iniciar sesión
+              </Link>
+
+              <Link
+                to="/register"
+                onClick={cerrarMenu}
+                className="
+                  flex w-full items-center justify-center gap-2
+                  rounded-lg
+                  bg-gradient-to-r from-[#E80000] to-[#FF6B00]
+                  px-5 py-3
+                  text-sm font-bold text-white
+                "
+              >
+                <UserPlus className="h-4 w-4" />
+                Registrarse
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   )

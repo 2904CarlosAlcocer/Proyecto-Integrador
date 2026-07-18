@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import DashboardLayout from '../components/DashboardLayout'
-import { 
-  Eye, EyeOff, Plus, X, Clock, CheckCircle2, 
-  Smartphone, DollarSign, CreditCard, User, Search 
+import {
+  Eye, EyeOff, Plus, X, Clock, CheckCircle2,
+  Smartphone, DollarSign, CreditCard, User, Search
 } from 'lucide-react'
 
 const ROLES = [
@@ -65,47 +65,78 @@ function AdminDashboard() {
     }
   }
 
-  const cargarPedidos = async () => {
-    setCargandoPedidos(true)
+  // Cargar pedidos.
+  // silencioso = false: muestra "Cargando..." durante la primera carga.
+  // silencioso = true: actualiza los datos sin cambiar la pantalla.
+  const cargarPedidos = async (silencioso = false) => {
+    if (!silencioso) {
+      setCargandoPedidos(true)
+    }
+
     try {
       const response = await api.get('/pedidos')
       setPedidos(response.data)
     } catch (err) {
-      console.error(err)
+      console.error('Error al actualizar pedidos:', err)
     } finally {
-      setCargandoPedidos(false)
+      if (!silencioso) {
+        setCargandoPedidos(false)
+      }
     }
   }
 
-  const cargarComprobantes = async () => {
-    setCargandoComprobantes(true)
+  // Cargar comprobantes silenciosamente o mostrando la carga inicial.
+  const cargarComprobantes = async (silencioso = false) => {
+    if (!silencioso) {
+      setCargandoComprobantes(true)
+    }
+
     try {
       const response = await api.get('/admin/comprobantes')
       setComprobantes(response.data)
     } catch (err) {
-      console.error(err)
+      console.error('Error al actualizar comprobantes:', err)
     } finally {
-      setCargandoComprobantes(false)
+      if (!silencioso) {
+        setCargandoComprobantes(false)
+      }
     }
   }
 
-  // Carga inicial
+  // Carga inicial: aquí sí se muestran los mensajes de carga.
   useEffect(() => {
-    cargarUsuarios()
-    cargarPedidos()
-    cargarComprobantes()
+    const cargarDatosIniciales = async () => {
+      await Promise.all([
+        cargarUsuarios(),
+        cargarPedidos(false),
+        cargarComprobantes(false),
+      ])
+    }
+
+    cargarDatosIniciales()
   }, [])
 
-  // Auto-refresh de pedidos cada 10 segundos
+  // Actualización automática silenciosa cada 10 segundos.
   useEffect(() => {
-    const intervalo = setInterval(() => {
-      cargarPedidos()
-      cargarComprobantes()
-    }, 40000) // 10 segundos
+    const actualizarSilenciosamente = () => {
+      // No hace solicitudes innecesarias cuando la pestaña está oculta.
+      if (document.visibilityState !== 'visible') {
+        return
+      }
+
+      cargarPedidos(true)
+      cargarComprobantes(true)
+    }
+
+    const intervalo = setInterval(
+      actualizarSilenciosamente,
+      10000
+    )
 
     return () => clearInterval(intervalo)
   }, [])
 
+  // Abrir modal para crear personal
   const abrirModal = () => {
     setNombre('')
     setEmail('')
@@ -115,7 +146,6 @@ function AdminDashboard() {
     setMostrarPassword(false)
     setMostrarModal(true)
   }
-
   const handleCrearUsuario = async (e) => {
     e.preventDefault()
     setErrorForm('')
@@ -167,8 +197,8 @@ function AdminDashboard() {
   const ordenesAMostrar = vistaOrdenes === 'activas' ? ordenesActivas : ordenesEntregadas
 
   // Filtrar comprobantes
-  const comprobantesFiltrados = filtroComprobantes === 'todos' 
-    ? comprobantes 
+  const comprobantesFiltrados = filtroComprobantes === 'todos'
+    ? comprobantes
     : comprobantes.filter(c => c.estado_pago === filtroComprobantes)
 
   return (
@@ -192,28 +222,26 @@ function AdminDashboard() {
             <Clock size={20} className="text-[#F5A300]" />
             Gestión de órdenes
           </h2>
-          <span className="text-xs text-white/40">Se actualiza automáticamente cada 40s</span>
+          <span className="text-xs text-white/40">Se actualiza automáticamente cada 10s</span>
         </div>
 
         {/* Botones de vista */}
         <div className="flex gap-3 mb-6">
           <button
             onClick={() => setVistaOrdenes('activas')}
-            className={`px-6 py-2.5 rounded-lg font-bold text-sm uppercase transition-all ${
-              vistaOrdenes === 'activas'
-                ? 'bg-[#E4002B] text-white shadow-lg'
-                : 'bg-white/10 text-white/60 hover:bg-white/15'
-            }`}
+            className={`px-6 py-2.5 rounded-lg font-bold text-sm uppercase transition-all ${vistaOrdenes === 'activas'
+              ? 'bg-[#E4002B] text-white shadow-lg'
+              : 'bg-white/10 text-white/60 hover:bg-white/15'
+              }`}
           >
             Órdenes activas ({ordenesActivas.length})
           </button>
           <button
             onClick={() => setVistaOrdenes('entregadas')}
-            className={`px-6 py-2.5 rounded-lg font-bold text-sm uppercase transition-all ${
-              vistaOrdenes === 'entregadas'
-                ? 'bg-[#E4002B] text-white shadow-lg'
-                : 'bg-white/10 text-white/60 hover:bg-white/15'
-            }`}
+            className={`px-6 py-2.5 rounded-lg font-bold text-sm uppercase transition-all ${vistaOrdenes === 'entregadas'
+              ? 'bg-[#E4002B] text-white shadow-lg'
+              : 'bg-white/10 text-white/60 hover:bg-white/15'
+              }`}
           >
             Órdenes entregadas ({ordenesEntregadas.length})
           </button>
@@ -261,9 +289,8 @@ function AdminDashboard() {
                       )}
                     </div>
                     <span
-                      className={`flex items-center gap-1 text-xs font-bold uppercase px-2.5 py-1 rounded-full ${
-                        COLOR_ESTADO[pedido.estado_pedido]
-                      }`}
+                      className={`flex items-center gap-1 text-xs font-bold uppercase px-2.5 py-1 rounded-full ${COLOR_ESTADO[pedido.estado_pedido]
+                        }`}
                     >
                       {ETIQUETA_ESTADO[pedido.estado_pedido]}
                     </span>
@@ -328,8 +355,8 @@ function AdminDashboard() {
             <p className="p-6 text-white/60">Cargando comprobantes...</p>
           ) : comprobantesFiltrados.length === 0 ? (
             <p className="p-6 text-white/60 text-center">
-              {filtroComprobantes === 'todos' 
-                ? 'No hay comprobantes registrados' 
+              {filtroComprobantes === 'todos'
+                ? 'No hay comprobantes registrados'
                 : `No hay comprobantes con estado "${filtroComprobantes}"`}
             </p>
           ) : (
@@ -381,15 +408,14 @@ function AdminDashboard() {
                         </a>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className={`text-xs font-bold uppercase px-2.5 py-1 rounded-full ${
-                          comp.estado_pago === 'verificado'
-                            ? 'bg-[#EAF3DE] text-[#3B6D11]'
-                            : comp.estado_pago === 'rechazado'
+                        <span className={`text-xs font-bold uppercase px-2.5 py-1 rounded-full ${comp.estado_pago === 'verificado'
+                          ? 'bg-[#EAF3DE] text-[#3B6D11]'
+                          : comp.estado_pago === 'rechazado'
                             ? 'bg-[#FCEBEB] text-[#A32D2D]'
                             : 'bg-[#FDF1DA] text-[#A9824A]'
-                        }`}>
+                          }`}>
                           {comp.estado_pago === 'verificado' ? '✅ Verificado' :
-                           comp.estado_pago === 'rechazado' ? '❌ Rechazado' : '⏳ Pendiente'}
+                            comp.estado_pago === 'rechazado' ? '❌ Rechazado' : '⏳ Pendiente'}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-right space-x-2">
@@ -472,11 +498,10 @@ function AdminDashboard() {
 
                       <td className="px-5 py-3.5">
                         <span
-                          className={`text-xs font-bold uppercase px-2.5 py-1 rounded-full ${
-                            u.estado === 'activo'
-                              ? 'bg-[#EAF3DE] text-[#3B6D11]'
-                              : 'bg-white/10 text-white/50'
-                          }`}
+                          className={`text-xs font-bold uppercase px-2.5 py-1 rounded-full ${u.estado === 'activo'
+                            ? 'bg-[#EAF3DE] text-[#3B6D11]'
+                            : 'bg-white/10 text-white/50'
+                            }`}
                         >
                           {u.estado}
                         </span>

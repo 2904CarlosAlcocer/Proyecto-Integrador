@@ -1,7 +1,7 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import useAuthStore from '../store/authStore'
 import api from '../api/axios'
-import logoRooster from '../assets/logo.jpeg'
+import logoRooster from '../assets/logodef.jpeg'
 
 const NOMBRES_ROL = {
   admin: 'Administrador',

@@ -6,6 +6,7 @@ use App\Models\Pedido;
 use App\Models\Producto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -36,24 +37,48 @@ class PedidoController extends Controller
         $productos = json_decode($validated['productos'], true);
 
         $pedido = DB::transaction(function () use ($validated, $productos, $request) {
-            $total   = 0;
+            $total    = 0;
             $detalles = [];
 
             foreach ($productos as $item) {
-                $producto       = Producto::findOrFail($item['producto_id']);
-                $precioUnitario = $producto->precio;
-                $subtotal       = $precioUnitario * $item['cantidad'];
-                $total         += $subtotal;
+                $producto = Producto::findOrFail($item['producto_id']);
+                
+                // 🔥 PRECIO BASE
+                $precioUnitario = (float) $producto->precio;
+                
+                // 🔥 SUMAR EXTRAS (1500 por cada extra)
+                $extrasTexto = null;
+                if (isset($item['extras']) && !empty($item['extras'])) {
+                    $extrasTexto = $item['extras'];
+                    // Contar cuántos extras hay separados por coma
+                    $extrasArray = array_filter(array_map('trim', explode(',', $item['extras'])));
+                    $cantidadExtras = count($extrasArray);
+                    $precioUnitario += $cantidadExtras * 1500;
+                    
+                    // Log para debugging
+                    Log::info('Extras calculados:', [
+                        'producto' => $producto->nombre,
+                        'extras' => $item['extras'],
+                        'cantidad' => $cantidadExtras,
+                        'extra_total' => $cantidadExtras * 1500,
+                        'precio_final' => $precioUnitario
+                    ]);
+                }
+                
+                $subtotal = $precioUnitario * $item['cantidad'];
+                $total   += $subtotal;
 
                 $detalles[] = [
                     'producto_id'     => $producto->id,
                     'cantidad'        => $item['cantidad'],
                     'precio_unitario' => $precioUnitario,
                     'subtotal'        => $subtotal,
+                    'extras'          => $extrasTexto,
                     'observaciones'   => $item['observaciones'] ?? null,
                 ];
             }
 
+            // 🔥 CREAR PEDIDO
             $pedido = Pedido::create([
                 'cliente_id'        => $validated['cliente_id'],
                 'codigo_tracking'   => 'RC-' . strtoupper(Str::random(6)),
@@ -62,12 +87,15 @@ class PedidoController extends Controller
                 'total'             => $total,
             ]);
 
+            // 🔥 GUARDAR MÉTODO DE PAGO
             $this->guardarMetodoPago($pedido->id, $validated['metodo_pago']);
 
+            // 🔥 GUARDAR COMPROBANTE SI ES SINPE
             if ($validated['metodo_pago'] === 'sinpe' && $request->hasFile('comprobante')) {
                 $this->guardarComprobante($request->file('comprobante'), $pedido->id);
             }
 
+            // 🔥 GUARDAR DETALLES
             foreach ($detalles as $detalle) {
                 $pedido->detalles()->create($detalle);
             }
@@ -81,14 +109,15 @@ class PedidoController extends Controller
         ], 201);
     }
 
+    // 🔥 MÉTODOS DE METADATA
     private function guardarMetodoPago($pedidoId, $metodo)
     {
         $pedido = Pedido::with('cliente')->find($pedidoId);
 
         $this->actualizarMetadataPedido($pedidoId, [
-            'metodo_pago'   => $metodo,
-            'estado_pago'   => $metodo === 'sinpe' ? 'pendiente_comprobante' : 'no_requiere',
-            'fecha'         => now()->toDateTimeString(),
+            'metodo_pago'    => $metodo,
+            'estado_pago'    => $metodo === 'sinpe' ? 'pendiente_comprobante' : 'no_requiere',
+            'fecha'          => now()->toDateTimeString(),
             'cliente_nombre' => $pedido && $pedido->cliente
                 ? $pedido->cliente->nombre
                 : 'Sin cliente',
@@ -221,6 +250,7 @@ class PedidoController extends Controller
                         'cantidad'        => $detalle->cantidad,
                         'precio_unitario' => $detalle->precio_unitario,
                         'subtotal'        => $detalle->subtotal,
+                        'extras'          => $detalle->extras,
                         'observaciones'   => $detalle->observaciones,
                     ];
                 }),

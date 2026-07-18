@@ -1,15 +1,14 @@
 import { create } from 'zustand'
 
-const useCarritoStore = create((set) => ({
+const useCarritoStore = create((set, get) => ({
   items: [],
-  modalidad: 'consumo_local', // 'consumo_local' o 'retiro'
+  modalidad: 'consumo_local',
   cliente: {
     nombre: '',
     telefono: '',
     correo: '',
   },
 
-  // Agregar producto al carrito
   agregarProducto: (producto) =>
     set((state) => {
       const existente = state.items.find((item) => item.id === producto.id)
@@ -18,24 +17,43 @@ const useCarritoStore = create((set) => ({
         return {
           items: state.items.map((item) =>
             item.id === producto.id
-              ? { ...item, cantidad: item.cantidad + 1 }
+              ? { 
+                  ...item, 
+                  cantidad: item.cantidad + (producto.cantidad || 1),
+                  // 🔥 ACTUALIZAR PRECIO CON EXTRAS
+                  precio: producto.precio || item.precio,
+                  extras: producto.extras || item.extras,
+                  observaciones: producto.observaciones || item.observaciones,
+                  personalizacion: producto.personalizacion || item.personalizacion,
+                }
               : item
           ),
         }
       }
 
       return {
-        items: [...state.items, { ...producto, cantidad: 1 }],
+        items: [
+          ...state.items,
+          {
+            id: producto.id,
+            nombre: producto.nombre,
+            precio: producto.precio, // ← YA VIENE CON EXTRAS DEL PERSONALIZADOR
+            imagen_url: producto.imagen_url,
+            descripcion: producto.descripcion,
+            cantidad: producto.cantidad || 1,
+            extras: producto.extras || null,
+            observaciones: producto.observaciones || null,
+            personalizacion: producto.personalizacion || null,
+          },
+        ],
       }
     }),
 
-  // Eliminar producto
   eliminarProducto: (productoId) =>
     set((state) => ({
       items: state.items.filter((item) => item.id !== productoId),
     })),
 
-  // Actualizar cantidad
   actualizarCantidad: (productoId, cantidad) =>
     set((state) => ({
       items: state.items
@@ -45,30 +63,25 @@ const useCarritoStore = create((set) => ({
         .filter((item) => item.cantidad > 0),
     })),
 
-  // Cambiar modalidad
   setModalidad: (modalidad) => set({ modalidad }),
 
-  // Actualizar datos del cliente
   setCliente: (cliente) => set({ cliente }),
 
-  // Limpiar carrito
   limpiarCarrito: () =>
     set({
       items: [],
       cliente: { nombre: '', telefono: '', correo: '' },
     }),
 
-  // Obtener total
   obtenerTotal: () => {
-    return useCarritoStore.getState().items.reduce(
+    return get().items.reduce(
       (total, item) => total + item.precio * item.cantidad,
       0
     )
   },
 
-  // Obtener cantidad de items
   obtenerCantidadItems: () => {
-    return useCarritoStore.getState().items.reduce(
+    return get().items.reduce(
       (total, item) => total + item.cantidad,
       0
     )

@@ -5,9 +5,10 @@ import {
   Search, Filter, Grid, List, Plus, Check
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import axios from 'axios'  // ← SOLO CAMBIÉ ESTO: de 'api' a 'axios'
+import axios from 'axios'
 import fondoPrincipal from '../assets/imgMenu.jpeg'
 import useCarritoStore from '../store/carritoStore'
+import PersonalizadorPizza from '../components/PersonalizadorPizza'
 
 export default function Menu() {
   const [categorias, setCategorias] = useState([])
@@ -18,10 +19,11 @@ export default function Menu() {
   const [vista, setVista] = useState('grid')
   const [agregando, setAgregando] = useState(null)
 
-  // ===== STORE DEL CARRITO =====
+  // 🔥 ESTADO PARA PERSONALIZADOR
+  const [productoPersonalizando, setProductoPersonalizando] = useState(null)
+
   const { items, agregarProducto, eliminarProducto, actualizarCantidad, limpiarCarrito, obtenerTotal, obtenerCantidadItems } = useCarritoStore()
 
-  // Generar chispas
   const generateSparks = (count) => {
     return Array.from({ length: count }, (_, i) => ({
       id: i,
@@ -39,7 +41,6 @@ export default function Menu() {
     const cargarDatos = async () => {
       setCargando(true)
       try {
-        // 🔥 CREO INSTANCIA PÚBLICA SIN TOKEN - ESTO ES LO NUEVO
         const publicApi = axios.create({
           baseURL: 'http://127.0.0.1:8000/api',
           headers: {
@@ -48,8 +49,8 @@ export default function Menu() {
         })
 
         const [resCategorias, resProductos] = await Promise.all([
-          publicApi.get('/categorias'),  // ← Uso publicApi en vez de api
-          publicApi.get('/productos'),   // ← Uso publicApi en vez de api
+          publicApi.get('/categorias'),
+          publicApi.get('/productos'),
         ])
 
         setCategorias(resCategorias.data.filter(c => c.estado === 'activa'))
@@ -64,7 +65,6 @@ export default function Menu() {
     cargarDatos()
   }, [])
 
-  // Filtrar productos
   const productosFiltrados = productos.filter((producto) => {
     const coincideCategoria = categoriaSeleccionada === 'todas' 
       || producto.categoria_id === parseInt(categoriaSeleccionada)
@@ -75,7 +75,6 @@ export default function Menu() {
     return coincideCategoria && coincideBusqueda
   })
 
-  // Agrupar productos por categoría
   const productosAgrupados = productosFiltrados.reduce((acc, p) => {
     const catNombre = p.categoria?.nombre || 'Otros'
     if (!acc[catNombre]) acc[catNombre] = []
@@ -83,8 +82,14 @@ export default function Menu() {
     return acc
   }, {})
 
-  // ===== FUNCIÓN PARA AGREGAR AL CARRITO =====
+  // 🔥 FUNCIÓN PARA AGREGAR AL CARRITO (con personalización)
   const agregarAlCarrito = (producto) => {
+    // Si es pizza, abrir personalizador
+    if (producto.es_pizza) {
+      setProductoPersonalizando(producto)
+      return
+    }
+
     if (typeof agregarProducto !== 'function') {
       console.error('agregarProducto no es una función. Verifica tu store.')
       return
@@ -105,18 +110,43 @@ export default function Menu() {
     }, 800)
   }
 
-  // Verificar si un producto ya está en el carrito
+  // 🔥 MANEJAR CONFIRMACIÓN DEL PERSONALIZADOR
+  const handleConfirmarPersonalizacion = (itemPersonalizado) => {
+    if (typeof agregarProducto !== 'function') {
+      console.error('agregarProducto no es una función')
+      return
+    }
+
+    setAgregando(itemPersonalizado.producto_id)
+    
+    agregarProducto({
+      id: itemPersonalizado.producto_id,
+      nombre: itemPersonalizado.nombre,
+      precio: itemPersonalizado.precio,
+      imagen_url: itemPersonalizado.imagen_url,
+      cantidad: itemPersonalizado.cantidad,
+      extras: itemPersonalizado.extras,
+      observaciones: itemPersonalizado.observaciones,
+      personalizacion: itemPersonalizado.personalizacion,
+    })
+
+    setProductoPersonalizando(null)
+    
+    setTimeout(() => {
+      setAgregando(null)
+    }, 800)
+  }
+
   const estaEnCarrito = (productoId) => {
     if (!items) return false
     return items.some(item => item.id === productoId)
   }
 
-  // Total de items en el carrito
   const totalItems = obtenerCantidadItems ? obtenerCantidadItems() : 0
 
   return (
     <div className="bg-[#120C08] text-white overflow-hidden relative min-h-screen">
-      {/* ==================== CHISPAS DE FUEGO ==================== */}
+      {/* CHISPAS */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         {sparks.map((spark) => (
           <div
@@ -135,7 +165,7 @@ export default function Menu() {
         ))}
       </div>
 
-      {/* ==================== HERO ==================== */}
+      {/* HERO */}
       <section
         className="relative min-h-[50vh] flex items-center justify-center px-4 sm:px-6 py-20 overflow-hidden bg-cover bg-center"
         style={{
@@ -145,7 +175,6 @@ export default function Menu() {
       >
         <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/75 to-black/60 -z-10" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/70 to-[#120C08] -z-10" />
-
         <div className="absolute top-20 right-10 w-96 h-96 bg-[#E4002B]/15 rounded-full blur-3xl -z-10" />
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#F5A300]/10 rounded-full blur-3xl -z-10" />
 
@@ -185,25 +214,13 @@ export default function Menu() {
           </div>
         </div>
 
-        <svg
-          className="absolute bottom-0 left-0 w-full -mb-1"
-          viewBox="0 0 1200 35"
-          preserveAspectRatio="none"
-          style={{ zIndex: 5 }}
-        >
-          <path
-            d="M0,20 Q300,5 600,20 T1200,20 L1200,60 L0,60 Z"
-            fill="#120C08"
-          />
-          <path
-            d="M0,25 Q300,12 600,25 T1200,25 L1200,60 L0,60 Z"
-            fill="#120C08"
-            opacity="0.8"
-          />
+        <svg className="absolute bottom-0 left-0 w-full -mb-1" viewBox="0 0 1200 35" preserveAspectRatio="none" style={{ zIndex: 5 }}>
+          <path d="M0,20 Q300,5 600,20 T1200,20 L1200,60 L0,60 Z" fill="#120C08" />
+          <path d="M0,25 Q300,12 600,25 T1200,25 L1200,60 L0,60 Z" fill="#120C08" opacity="0.8" />
         </svg>
       </section>
 
-      {/* ==================== FILTROS Y BÚSQUEDA ==================== */}
+      {/* FILTROS */}
       <section className="py-8 px-4 sm:px-6 bg-gradient-to-b from-[#120C08] to-[#0a0604] border-b border-white/10 sticky top-[72px] z-30 backdrop-blur-md bg-[#120C08]/90">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -266,12 +283,12 @@ export default function Menu() {
         </div>
       </section>
 
-      {/* ==================== PRODUCTOS ==================== */}
+      {/* PRODUCTOS */}
       <section className="py-12 sm:py-16 px-4 sm:px-6 bg-gradient-to-b from-[#0a0604] to-[#120C08]">
         <div className="max-w-6xl mx-auto">
           {cargando ? (
             <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F5A300]"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F5A300]" />
             </div>
           ) : productosFiltrados.length === 0 ? (
             <div className="text-center py-20">
@@ -297,6 +314,7 @@ export default function Menu() {
                     {items.map((producto) => {
                       const enCarrito = estaEnCarrito(producto.id)
                       const agregandoEste = agregando === producto.id
+                      const esPizza = producto.es_pizza
 
                       return (
                         <div
@@ -317,6 +335,12 @@ export default function Menu() {
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-[#120C08] via-[#120C08]/60 to-transparent" />
                             
+                            {esPizza && (
+                              <div className="absolute top-2 left-2 bg-[#F5A300] text-black text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+                                🍕 Personalizable
+                              </div>
+                            )}
+
                             {enCarrito && (
                               <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[#F5A300] text-black text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full flex items-center gap-0.5 sm:gap-1">
                                 <Check size={8} className="sm:w-[10px] sm:h-[10px]" />
@@ -329,6 +353,19 @@ export default function Menu() {
                             <h4 className="text-white font-bold text-xs sm:text-sm lg:text-base group-hover:text-[#F5A300] transition-colors line-clamp-2 min-h-[2.5rem] sm:min-h-[3rem]">
                               {producto.nombre}
                             </h4>
+                            
+                            {producto.ingredientes_base && producto.ingredientes_base.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {producto.ingredientes_base.slice(0, 3).map((ing) => (
+                                  <span key={ing.id} className="text-[8px] text-white/40 bg-white/5 px-1.5 py-0.5 rounded">
+                                    {ing.nombre}
+                                  </span>
+                                ))}
+                                {producto.ingredientes_base.length > 3 && (
+                                  <span className="text-[8px] text-white/40">+{producto.ingredientes_base.length - 3}</span>
+                                )}
+                              </div>
+                            )}
                             
                             {producto.descripcion && (
                               <p className="text-white/40 text-[10px] sm:text-xs lg:text-sm mt-0.5 sm:mt-1 line-clamp-2 hidden sm:block">
@@ -346,6 +383,8 @@ export default function Menu() {
                                 className={`px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 rounded-lg text-white text-[9px] sm:text-[10px] lg:text-xs font-bold transition-all hover:scale-105 flex items-center gap-1 sm:gap-1.5 ${
                                   enCarrito 
                                     ? 'bg-[#F5A300] text-black hover:bg-[#E4002B] hover:text-white'
+                                    : esPizza
+                                    ? 'bg-gradient-to-r from-[#F5A300] to-[#E4002B] hover:shadow-lg hover:shadow-[#F5A300]/30'
                                     : 'bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-lg hover:shadow-[#E4002B]/30'
                                 }`}
                               >
@@ -358,6 +397,11 @@ export default function Menu() {
                                   <>
                                     <Check size={10} className="sm:w-3 sm:h-3" />
                                     <span className="hidden xs:inline">Agregado</span>
+                                  </>
+                                ) : esPizza ? (
+                                  <>
+                                    <Plus size={10} className="sm:w-3 sm:h-3" />
+                                    <span className="hidden xs:inline">Personalizar</span>
                                   </>
                                 ) : (
                                   <>
@@ -389,6 +433,7 @@ export default function Menu() {
                     {items.map((producto) => {
                       const enCarrito = estaEnCarrito(producto.id)
                       const agregandoEste = agregando === producto.id
+                      const esPizza = producto.es_pizza
 
                       return (
                         <div
@@ -418,6 +463,18 @@ export default function Menu() {
                                 {producto.descripcion}
                               </p>
                             )}
+                            {producto.ingredientes_base && producto.ingredientes_base.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-0.5">
+                                {producto.ingredientes_base.slice(0, 3).map((ing) => (
+                                  <span key={ing.id} className="text-[8px] text-white/40 bg-white/5 px-1.5 py-0.5 rounded">
+                                    {ing.nombre}
+                                  </span>
+                                ))}
+                                {producto.ingredientes_base.length > 3 && (
+                                  <span className="text-[8px] text-white/40">+{producto.ingredientes_base.length - 3}</span>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
@@ -430,6 +487,8 @@ export default function Menu() {
                               className={`px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 rounded-lg text-white text-[9px] sm:text-[10px] lg:text-xs font-bold transition-all hover:scale-105 flex items-center gap-1 sm:gap-1.5 ${
                                 enCarrito 
                                   ? 'bg-[#F5A300] text-black hover:bg-[#E4002B] hover:text-white'
+                                  : esPizza
+                                  ? 'bg-gradient-to-r from-[#F5A300] to-[#E4002B] hover:shadow-lg hover:shadow-[#F5A300]/30'
                                   : 'bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-lg hover:shadow-[#E4002B]/30'
                               }`}
                             >
@@ -442,6 +501,11 @@ export default function Menu() {
                                 <>
                                   <Check size={10} className="sm:w-3 sm:h-3" />
                                   <span className="hidden xs:inline">Agregado</span>
+                                </>
+                              ) : esPizza ? (
+                                <>
+                                  <Plus size={10} className="sm:w-3 sm:h-3" />
+                                  <span className="hidden xs:inline">Personalizar</span>
                                 </>
                               ) : (
                                 <>
@@ -462,7 +526,7 @@ export default function Menu() {
         </div>
       </section>
 
-      {/* ==================== CTA FINAL ==================== */}
+      {/* CTA FINAL */}
       <section className="relative py-16 sm:py-24 px-4 sm:px-6 border-t border-white/10 text-center overflow-hidden">
         <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8 relative z-10">
           <h2 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl font-black">
@@ -491,45 +555,33 @@ export default function Menu() {
         </div>
       </section>
 
-      {/* ==================== FOOTER ==================== */}
+      {/* FOOTER */}
       <footer className="relative border-t border-white/10 py-8 sm:py-12 px-4 sm:px-6 bg-black/30 overflow-hidden">
         <div className="max-w-6xl mx-auto text-center text-white/60 text-xs sm:text-sm relative z-10">
           <p>Rooster Pizza & Grill © 2026 | Mercadito Arenal, La Fortuna, Alajuela</p>
         </div>
       </footer>
 
-      {/* ==================== ESTILOS PARA CHISPAS ==================== */}
+      {/* 🔥 PERSONALIZADOR DE PIZZA */}
+      {productoPersonalizando && (
+        <PersonalizadorPizza
+          producto={productoPersonalizando}
+          extrasDisponibles={productoPersonalizando.extras_disponibles || []}
+          onConfirmar={handleConfirmarPersonalizacion}
+          onCancelar={() => setProductoPersonalizando(null)}
+        />
+      )}
+
       <style>{`
         @keyframes spark {
-          0% {
-            opacity: 0;
-            transform: scale(0) rotate(0deg) translateY(0);
-          }
-          30% {
-            opacity: 1;
-            transform: scale(1.5) rotate(45deg) translateY(-10px);
-          }
-          70% {
-            opacity: 0.8;
-            transform: scale(1) rotate(90deg) translateY(-20px);
-          }
-          100% {
-            opacity: 0;
-            transform: scale(0) rotate(180deg) translateY(-40px);
-          }
+          0% { opacity: 0; transform: scale(0) rotate(0deg) translateY(0); }
+          30% { opacity: 1; transform: scale(1.5) rotate(45deg) translateY(-10px); }
+          70% { opacity: 0.8; transform: scale(1) rotate(90deg) translateY(-20px); }
+          100% { opacity: 0; transform: scale(0) rotate(180deg) translateY(-40px); }
         }
-
-        .animate-spark {
-          animation: spark linear infinite;
-        }
-
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .animate-spark { animation: spark linear infinite; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </div>
   )

@@ -1,150 +1,183 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Login from './components/Login'
+import { lazy, Suspense } from 'react'
+
 import ProtectedRoute from './components/ProtectedRoute'
 import ScrollToTop from './components/ScrollToTop'
-import SubirComprobante from './pages/SubirComprobante'
+import NavbarPublico from './components/NavbarPublico'
+import Login from './components/Login'
 
 // Páginas privadas
-import AdminDashboard from './pages/AdminDashboard'
-import AdminProductos from './pages/AdminProductos'
-import CocinaDashboard from './pages/CocinaDashboard'
-import CajaDashboard from './pages/CajaDashboard'
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const AdminProductos = lazy(() => import('./pages/AdminProductos'))
+const CocinaDashboard = lazy(() => import('./pages/CocinaDashboard'))
+const CajaDashboard = lazy(() => import('./pages/CajaDashboard'))
 
 // Páginas públicas
-import NavbarPublico from './components/NavbarPublico'
-import Home from './pages/Home'
-import Nosotros from './pages/Nosotros'
-import Menu from './pages/Menu'
-import Carrito from './pages/Carrito'
-import Ubicacion from './pages/Ubicacion'
-import Contacto from './pages/Contacto'
-import EstadoPedido from './pages/EstadoPedido'
+const Home = lazy(() => import('./pages/Home'))
+const Nosotros = lazy(() => import('./pages/Nosotros'))
+const Menu = lazy(() => import('./pages/Menu'))
+const Carrito = lazy(() => import('./pages/Carrito'))
+const Ubicacion = lazy(() => import('./pages/Ubicacion'))
+const Contacto = lazy(() => import('./pages/Contacto'))
+const EstadoPedido = lazy(() => import('./pages/EstadoPedido'))
+const SubirComprobante = lazy(() => import('./pages/SubirComprobante'))
+const Register = lazy(() => import('./pages/Register'))
+
+function Cargando() {
+  return (
+    <div className="min-h-[100dvh] bg-[#120C08] flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-12 h-12 mx-auto mb-4 rounded-full border-2 border-white/20 border-t-[#F5A300] animate-spin" />
+
+        <p className="text-white/60">
+          Cargando...
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/*
+  El espacio para el navbar se aplica solamente
+  en las páginas que realmente tienen navbar.
+*/
+function LayoutPublico({ children }) {
+  return (
+    <div className="min-h-[100dvh] bg-[#120C08]">
+      <NavbarPublico />
+
+      <main className="pt-[68px]">
+        {children}
+      </main>
+    </div>
+  )
+}
 
 function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
 
-      <Routes>
-        <Route path="/login" element={<Login />} />
+      <Suspense fallback={<Cargando />}>
+        <Routes>
+          {/* LOGIN Y REGISTRO SIN NAVBAR */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        <Route
-          path="/"
-          element={
-            <>
-              <NavbarPublico />
-              <Home />
-            </>
-          }
-        />
+          {/* PÁGINAS PÚBLICAS CON NAVBAR */}
+          <Route
+            path="/"
+            element={
+              <LayoutPublico>
+                <Home />
+              </LayoutPublico>
+            }
+          />
 
-        <Route
-          path="/nosotros"
-          element={
-            <>
-              <NavbarPublico />
-              <Nosotros />
-            </>
-          }
-        />
+          <Route
+            path="/nosotros"
+            element={
+              <LayoutPublico>
+                <Nosotros />
+              </LayoutPublico>
+            }
+          />
 
-        <Route
-          path="/menu"
-          element={
-            <>
-              <NavbarPublico />
-              <Menu />
-            </>
-          }
-        />
+          <Route
+            path="/menu"
+            element={
+              <LayoutPublico>
+                <Menu />
+              </LayoutPublico>
+            }
+          />
 
-        <Route
-          path="/ubicacion"
-          element={
-            <>
-              <NavbarPublico />
-              <Ubicacion />
-            </>
-          }
-        />
-        <Route 
-          path="/subir-comprobante/:codigo" 
-          element={
-            <>
-              <NavbarPublico />
-              <SubirComprobante />
-            </>
-          }
-        />
+          <Route
+            path="/ubicacion"
+            element={
+              <LayoutPublico>
+                <Ubicacion />
+              </LayoutPublico>
+            }
+          />
 
-        <Route
-          path="/contacto"
-          element={
-            <>
-              <NavbarPublico />
-              <Contacto />
-            </>
-          }
-        />
+          <Route
+            path="/contacto"
+            element={
+              <LayoutPublico>
+                <Contacto />
+              </LayoutPublico>
+            }
+          />
 
-        <Route
-          path="/carrito"
-          element={
-            <>
-              <NavbarPublico />
-              <Carrito />
-            </>
-          }
-        />
+          <Route
+            path="/carrito"
+            element={
+              <LayoutPublico>
+                <Carrito />
+              </LayoutPublico>
+            }
+          />
 
-        <Route
-          path="/estado-pedido"
-          element={
-            <>
-              <NavbarPublico />
-              <EstadoPedido />
-            </>
-          }
-        />
+          <Route
+            path="/estado-pedido"
+            element={
+              <LayoutPublico>
+                <EstadoPedido />
+              </LayoutPublico>
+            }
+          />
 
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute rolesPermitidos={['admin']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/subir-comprobante/:codigo"
+            element={
+              <LayoutPublico>
+                <SubirComprobante />
+              </LayoutPublico>
+            }
+          />
 
-        <Route
-          path="/admin/productos"
-          element={
-            <ProtectedRoute rolesPermitidos={['admin']}>
-              <AdminProductos />
-            </ProtectedRoute>
-          }
-        />
+          {/* RUTAS PRIVADAS */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/cocina"
-          element={
-            <ProtectedRoute rolesPermitidos={['cocina', 'admin']}>
-              <CocinaDashboard />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/admin/productos"
+            element={
+              <ProtectedRoute rolesPermitidos={['admin']}>
+                <AdminProductos />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/caja"
-          element={
-            <ProtectedRoute rolesPermitidos={['caja', 'admin']}>
-              <CajaDashboard />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/cocina"
+            element={
+              <ProtectedRoute rolesPermitidos={['cocina', 'admin']}>
+                <CocinaDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route
+            path="/caja"
+            element={
+              <ProtectedRoute rolesPermitidos={['caja', 'admin']}>
+                <CajaDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* RUTA NO ENCONTRADA */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

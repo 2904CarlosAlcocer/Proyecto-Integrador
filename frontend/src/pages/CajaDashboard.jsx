@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import DashboardLayout from '../components/DashboardLayout'
 import { QRCodeCanvas } from 'qrcode.react'
+import PersonalizadorPizza from '../components/PersonalizadorPizza'
 import {
   Plus,
   Minus,
@@ -38,6 +39,9 @@ function CajaDashboard() {
   const [mensaje, setMensaje] = useState(null)
   const [qrComprobanteUrl, setQrComprobanteUrl] = useState(null)
 
+  // 🔥 ESTADO PARA PERSONALIZADOR
+  const [productoPersonalizando, setProductoPersonalizando] = useState(null)
+
   const [clientes, setClientes] = useState([])
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
   const [busquedaCliente, setBusquedaCliente] = useState('')
@@ -47,6 +51,40 @@ function CajaDashboard() {
   const DATOS_SINPE = {
     telefono: '8888-8888',
     nombre: 'Pizzería Rooster S.A.',
+  }
+
+  // 🔥 FUNCIÓN PARA FORMATEAR PRECIOS (SIN DECIMALES)
+  const formatearPrecio = (monto) => {
+    return monto.toLocaleString('es-CR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })
+  }
+
+  // 🔥 FUNCIÓN PARA RENDERIZAR EXTRAS Y OBSERVACIONES EN CAJA
+  const renderExtrasYObservaciones = (item) => {
+    const detalles = []
+
+    if (item.extras) {
+      detalles.push(`➕ Extras: ${item.extras}`)
+    }
+    if (item.observaciones) {
+      detalles.push(`📝 ${item.observaciones}`)
+    }
+
+    if (detalles.length === 0) return null
+
+    return (
+      <div className="text-[9px] text-[#6B6862] mt-0.5 space-y-0.5">
+        {detalles.map((d, i) => (
+          <p key={i} className="truncate">{d}</p>
+        ))}
+      </div>
+    )
+  }
+
+  const tieneExtras = (item) => {
+    return item.extras || item.observaciones
   }
 
   useEffect(() => {
@@ -76,7 +114,15 @@ function CajaDashboard() {
       c.correo?.toLowerCase().includes(busquedaCliente.toLowerCase())
   )
 
+  // 🔥 AGREGAR PRODUCTO - AHORA ABRE PERSONALIZADOR SI ES PIZZA
   const agregarAlCarrito = (producto) => {
+    // Si es pizza, abrir personalizador
+    if (producto.es_pizza) {
+      setProductoPersonalizando(producto)
+      return
+    }
+
+    // Si no es pizza, agregar directamente
     setCarrito((prev) => {
       const existente = prev.find((item) => item.producto_id === producto.id)
 
@@ -95,9 +141,46 @@ function CajaDashboard() {
           nombre: producto.nombre,
           precio: parseFloat(producto.precio),
           cantidad: 1,
+          extras: null,
+          observaciones: null,
         },
       ]
     })
+  }
+
+  // 🔥 MANEJAR CONFIRMACIÓN DEL PERSONALIZADOR
+  const handleConfirmarPersonalizacion = (itemPersonalizado) => {
+    setCarrito((prev) => {
+      const existente = prev.find((item) => item.producto_id === itemPersonalizado.producto_id)
+
+      if (existente) {
+        return prev.map((item) =>
+          item.producto_id === itemPersonalizado.producto_id
+            ? { 
+                ...item, 
+                cantidad: item.cantidad + 1,
+                precio: itemPersonalizado.precio,
+                extras: itemPersonalizado.extras,
+                observaciones: itemPersonalizado.observaciones,
+              }
+            : item
+        )
+      }
+
+      return [
+        ...prev,
+        {
+          producto_id: itemPersonalizado.producto_id,
+          nombre: itemPersonalizado.nombre,
+          precio: itemPersonalizado.precio,
+          cantidad: 1,
+          extras: itemPersonalizado.extras || null,
+          observaciones: itemPersonalizado.observaciones || null,
+        },
+      ]
+    })
+
+    setProductoPersonalizando(null)
   }
 
   const cambiarCantidad = (productoId, delta) => {
@@ -153,16 +236,18 @@ function CajaDashboard() {
     setQrComprobanteUrl(null)
 
     try {
+      const productosPayload = carrito.map((item) => ({
+        producto_id: item.producto_id,
+        cantidad: item.cantidad,
+        extras: item.extras || null,
+        observaciones: item.observaciones || null,
+      }))
+
       const payload = {
         cliente_id: clienteSeleccionado.id,
         modalidad_entrega: modalidad,
         metodo_pago: metodoPago,
-        productos: JSON.stringify(
-          carrito.map((item) => ({
-            producto_id: item.producto_id,
-            cantidad: item.cantidad,
-          }))
-        ),
+        productos: JSON.stringify(productosPayload),
       }
 
       const response = await api.post('/pedidos', payload)
@@ -211,6 +296,7 @@ function CajaDashboard() {
     <DashboardLayout titulo="Punto de caja" dark>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          {/* SECCIÓN CLIENTE */}
           <div className="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-4">
             <div className="flex items-center gap-3 mb-3">
               <User size={20} className="text-[#F5A300]" />
@@ -306,6 +392,7 @@ function CajaDashboard() {
             )}
           </div>
 
+          {/* CATÁLOGO DE PRODUCTOS */}
           {cargandoProductos ? (
             <p className="text-[#6B6862] text-sm">Cargando catálogo...</p>
           ) : (
@@ -316,40 +403,49 @@ function CajaDashboard() {
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {items.map((producto) => (
-                    <button
-                      key={producto.id}
-                      onClick={() => agregarAlCarrito(producto)}
-                      className="text-left bg-white hover:bg-[#FFF9F0] border border-[#E5E2DC] hover:border-[#F5A300] rounded-xl overflow-hidden transition-colors shadow-sm"
-                    >
-                      <div className="aspect-video bg-[#F1EFE8] flex items-center justify-center overflow-hidden">
-                        {producto.imagen_url ? (
-                          <img
-                            src={producto.imagen_url}
-                            alt={producto.nombre}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <ImageOff size={28} className="text-[#C9C5BC]" />
-                        )}
-                      </div>
+                  {items.map((producto) => {
+                    const esPizza = producto.es_pizza
+                    return (
+                      <button
+                        key={producto.id}
+                        onClick={() => agregarAlCarrito(producto)}
+                        className="text-left bg-white hover:bg-[#FFF9F0] border border-[#E5E2DC] hover:border-[#F5A300] rounded-xl overflow-hidden transition-colors shadow-sm"
+                      >
+                        <div className="aspect-video bg-[#F1EFE8] flex items-center justify-center overflow-hidden">
+                          {producto.imagen_url ? (
+                            <img
+                              src={producto.imagen_url}
+                              alt={producto.nombre}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <ImageOff size={28} className="text-[#C9C5BC]" />
+                          )}
+                        </div>
 
-                      <div className="p-4">
-                        <p className="text-[#1A1A1A] font-semibold text-sm line-clamp-1">
-                          {producto.nombre}
-                        </p>
-                        <p className="text-[#E4002B] font-bold mt-2">
-                          ₡{parseFloat(producto.precio).toLocaleString('es-CR')}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
+                        <div className="p-4">
+                          <p className="text-[#1A1A1A] font-semibold text-sm line-clamp-1">
+                            {producto.nombre}
+                          </p>
+                          {esPizza && (
+                            <span className="text-[8px] bg-[#F5A300]/10 text-[#F5A300] px-1.5 py-0.5 rounded-full">
+                              🍕 Personalizable
+                            </span>
+                          )}
+                          <p className="text-[#E4002B] font-bold mt-2">
+                            ₡{formatearPrecio(producto.precio)}
+                          </p>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             ))
           )}
         </div>
 
+        {/* CARRITO */}
         <div className="bg-white border border-[#E5E2DC] rounded-xl overflow-hidden shadow-sm flex flex-col h-[600px] sticky top-24">
           <div className="h-[3px] bg-gradient-to-r from-[#E4002B] via-[#F5A300] to-[#E4002B] shrink-0" />
 
@@ -365,6 +461,7 @@ function CajaDashboard() {
               )}
             </div>
 
+            {/* MÉTODO DE PAGO */}
             <div className="mb-3 shrink-0">
               <label className="block text-xs font-bold text-[#6B6862] uppercase tracking-wide mb-1.5">
                 Método de pago
@@ -394,6 +491,7 @@ function CajaDashboard() {
               </div>
             </div>
 
+            {/* SINPE */}
             {metodoPago === 'sinpe' && (
               <div className="bg-[#FFF9F0] border border-[#F5A300] rounded-xl p-3 mb-3 shrink-0">
                 <div className="flex items-center gap-2 mb-2">
@@ -415,7 +513,7 @@ function CajaDashboard() {
 
                 <p className="text-[#6B6862] text-[11px] mt-1">Monto</p>
                 <p className="text-[#1A1A1A] font-black text-base">
-                  ₡{total.toLocaleString('es-CR')}
+                  ₡{formatearPrecio(total)}
                 </p>
 
                 {qrComprobanteUrl ? (
@@ -448,6 +546,7 @@ function CajaDashboard() {
               </div>
             )}
 
+            {/* PRODUCTOS EN CARRITO - CON EXTRAS Y OBSERVACIONES */}
             <div className="flex-1 overflow-y-auto mb-3 border-t border-[#E5E2DC] pt-2">
               {carrito.length === 0 ? (
                 <p className="text-[#9B988F] text-sm py-4 text-center">
@@ -463,10 +562,16 @@ function CajaDashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="text-[#1A1A1A] font-medium text-sm truncate">
                           {item.nombre}
+                          {tieneExtras(item) && (
+                            <span className="ml-1 text-[8px] bg-[#F5A300]/20 text-[#F5A300] px-1 py-0.5 rounded-full">
+                              ✨
+                            </span>
+                          )}
                         </p>
                         <p className="text-[#9B988F] text-[10px]">
-                          ₡{item.precio.toLocaleString('es-CR')}
+                          ₡{formatearPrecio(item.precio)}
                         </p>
+                        {renderExtrasYObservaciones(item)}
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
@@ -501,6 +606,7 @@ function CajaDashboard() {
               )}
             </div>
 
+            {/* MODALIDAD */}
             <div className="border-t border-[#E5E2DC] pt-2 mb-2 shrink-0">
               <select
                 value={modalidad}
@@ -515,11 +621,12 @@ function CajaDashboard() {
               </select>
             </div>
 
+            {/* TOTAL Y BOTÓN */}
             <div className="border-t border-[#E5E2DC] pt-2 shrink-0">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[#6B6862] text-sm font-semibold">Total</span>
                 <span className="text-[#1A1A1A] text-xl font-black font-mono">
-                  ₡{total.toLocaleString('es-CR')}
+                  ₡{formatearPrecio(total)}
                 </span>
               </div>
 
@@ -551,6 +658,16 @@ function CajaDashboard() {
           </div>
         </div>
       </div>
+
+      {/* 🔥 PERSONALIZADOR DE PIZZA (para Caja) */}
+      {productoPersonalizando && (
+        <PersonalizadorPizza
+          producto={productoPersonalizando}
+          extrasDisponibles={productoPersonalizando.extras_disponibles || []}
+          onConfirmar={handleConfirmarPersonalizacion}
+          onCancelar={() => setProductoPersonalizando(null)}
+        />
+      )}
     </DashboardLayout>
   )
 }

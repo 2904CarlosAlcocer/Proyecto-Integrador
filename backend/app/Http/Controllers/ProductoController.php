@@ -3,36 +3,35 @@
 namespace App\Http\Controllers;
 
 use App\Models\Producto;
+use App\Models\Ingrediente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ProductoController extends Controller
 {
-    /**
-     * Lista productos disponibles (para Caja, catálogo público).
-     */
     public function index(Request $request)
     {
-        $productos = Producto::with('categoria')
+        $productos = Producto::with(['categoria', 'ingredientes'])
             ->where('estado', 'disponible')
             ->orderBy('categoria_id')
             ->get();
 
-        return response()->json($this->conUrlImagen($productos));
+        $extras = Ingrediente::where('estado', 'disponible')->get();
+
+        return response()->json($this->conUrlImagen($productos, $extras));
     }
 
-    /**
-     * Lista TODOS los productos, incluso desactivados (para Admin).
-     */
     public function indexAdmin()
     {
-        $productos = Producto::with('categoria')
+        $productos = Producto::with(['categoria', 'ingredientes'])
             ->orderBy('categoria_id')
             ->orderBy('nombre')
             ->get();
 
-        return response()->json($this->conUrlImagen($productos));
+        $extras = Ingrediente::where('estado', 'disponible')->get();
+
+        return response()->json($this->conUrlImagen($productos, $extras));
     }
 
     public function store(Request $request)
@@ -43,6 +42,8 @@ class ProductoController extends Controller
             'descripcion' => 'nullable|string|max:255',
             'precio' => 'required|numeric|min:0',
             'imagen' => 'nullable|image|max:4096',
+            'ingredientes' => 'nullable|array',
+            'ingredientes.*' => 'exists:ingredientes,id',
         ]);
 
         $rutaImagen = null;
@@ -59,9 +60,13 @@ class ProductoController extends Controller
             'estado' => 'disponible',
         ]);
 
+        if (!empty($validated['ingredientes'])) {
+            $producto->ingredientes()->attach($validated['ingredientes']);
+        }
+
         return response()->json([
             'message' => 'Producto creado correctamente',
-            'producto' => $this->conUrlImagen($producto->load('categoria')),
+            'producto' => $this->conUrlImagen($producto->load(['categoria', 'ingredientes'])),
         ], 201);
     }
 
@@ -73,6 +78,8 @@ class ProductoController extends Controller
             'descripcion' => 'nullable|string|max:255',
             'precio' => 'required|numeric|min:0',
             'imagen' => 'nullable|image|max:4096',
+            'ingredientes' => 'nullable|array',
+            'ingredientes.*' => 'exists:ingredientes,id',
         ]);
 
         if ($request->hasFile('imagen')) {
@@ -84,9 +91,13 @@ class ProductoController extends Controller
 
         $producto->update($validated);
 
+        if ($request->has('ingredientes')) {
+            $producto->ingredientes()->sync($validated['ingredientes']);
+        }
+
         return response()->json([
             'message' => 'Producto actualizado correctamente',
-            'producto' => $this->conUrlImagen($producto->load('categoria')),
+            'producto' => $this->conUrlImagen($producto->load(['categoria', 'ingredientes'])),
         ]);
     }
 
@@ -97,14 +108,11 @@ class ProductoController extends Controller
 
         return response()->json([
             'message' => 'Estado actualizado',
-            'producto' => $this->conUrlImagen($producto->load('categoria')),
+            'producto' => $this->conUrlImagen($producto->load(['categoria', 'ingredientes'])),
         ]);
     }
 
-    /**
-     * Agrega la URL completa de la imagen para que el frontend la use directo.
-     */
-    private function conUrlImagen($productos)
+    private function conUrlImagen($productos, $extras = null)
     {
         $esColeccion = $productos instanceof \Illuminate\Support\Collection;
         $items = $esColeccion ? $productos : collect([$productos]);
@@ -113,7 +121,30 @@ class ProductoController extends Controller
             $producto->imagen_url = $producto->imagen
                 ? Storage::disk('public')->url($producto->imagen)
                 : null;
+
+            $producto->ingredientes_base = $producto->ingredientes->map(function ($ing) {
+                return [
+                    'id' => $ing->id,
+                    'nombre' => $ing->nombre,
+                ];
+            });
+
+            $producto->es_pizza = $producto->categoria && strtolower($producto->categoria->nombre) === 'pizzas';
         });
+
+        if ($extras) {
+            $extrasArray = $extras->map(function ($extra) {
+                return [
+                    'id' => $extra->id,
+                    'nombre' => $extra->nombre,
+                    'precio_extra' => 1500,
+                ];
+            });
+
+            $items->each(function ($producto) use ($extrasArray) {
+                $producto->extras_disponibles = $extrasArray;
+            });
+        }
 
         return $esColeccion ? $items : $items->first();
     }
