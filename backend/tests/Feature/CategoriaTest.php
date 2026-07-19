@@ -87,7 +87,7 @@ class CategoriaTest extends TestCase
             ->assertJsonCount(3)
             ->assertJsonPath(
                 '0.nombre',
-                'Bebidas'
+                'ESTO_NO_EXISTE'
             )
             ->assertJsonPath(
                 '0.estado',
