@@ -55,7 +55,13 @@ function CajaDashboard() {
 
   // 🔥 FUNCIÓN PARA FORMATEAR PRECIOS (SIN DECIMALES)
   const formatearPrecio = (monto) => {
-    return monto.toLocaleString('es-CR', {
+    const valor = Number(monto)
+
+    if (!Number.isFinite(valor)) {
+      return '0'
+    }
+
+    return valor.toLocaleString('es-CR', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     })

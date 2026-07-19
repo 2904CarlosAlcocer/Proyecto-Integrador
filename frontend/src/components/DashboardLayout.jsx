@@ -24,10 +24,16 @@ function DashboardLayout({ children, titulo, acciones, dark = false }) {
     try {
       await api.post('/logout')
     } catch (err) {
-      console.error('Error al cerrar sesión en el servidor:', err)
+      console.error(
+        'Error al cerrar sesión en el servidor:',
+        err
+      )
     } finally {
       logoutStore()
-      navigate('/login')  // ← SOLO ESTO CAMBIÉ
+
+      navigate('/login', {
+        replace: true,
+      })
     }
   }
 
@@ -40,18 +46,16 @@ function DashboardLayout({ children, titulo, acciones, dark = false }) {
 
   return (
     <div
-      className={`min-h-screen font-sans ${
-        dark
+      className={`min-h-screen font-sans ${dark
           ? 'bg-[#120C08]'
           : 'bg-[#F7F5F2]'
-      }`}
+        }`}
     >
       <header
-        className={`sticky top-0 z-30 shadow-sm border-b ${
-          dark
+        className={`sticky top-0 z-30 shadow-sm border-b ${dark
             ? 'bg-black/70 backdrop-blur-xl border-white/10'
             : 'bg-white border-[#E5E2DC]'
-        }`}
+          }`}
       >
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -61,9 +65,8 @@ function DashboardLayout({ children, titulo, acciones, dark = false }) {
               className="w-9 h-9 rounded-md object-cover shrink-0"
             />
             <span
-              className={`font-mono font-bold text-sm tracking-tight whitespace-nowrap ${
-                dark ? 'text-white' : 'text-[#1A1A1A]'
-              }`}
+              className={`font-mono font-bold text-sm tracking-tight whitespace-nowrap ${dark ? 'text-white' : 'text-[#1A1A1A]'
+                }`}
             >
               ROOSTER <span className="text-[#E4002B]">CR</span>
             </span>
@@ -72,9 +75,8 @@ function DashboardLayout({ children, titulo, acciones, dark = false }) {
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
               <p
-                className={`text-sm font-semibold leading-none ${
-                  dark ? 'text-white' : 'text-[#1A1A1A]'
-                }`}
+                className={`text-sm font-semibold leading-none ${dark ? 'text-white' : 'text-[#1A1A1A]'
+                  }`}
               >
                 {user?.name}
               </p>
@@ -84,9 +86,8 @@ function DashboardLayout({ children, titulo, acciones, dark = false }) {
             </div>
 
             <div
-              className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                dark ? 'bg-white/10 border border-white/20' : 'bg-[#1A1A1A]'
-              }`}
+              className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${dark ? 'bg-white/10 border border-white/20' : 'bg-[#1A1A1A]'
+                }`}
             >
               <span className="text-white font-mono font-bold text-xs">
                 {iniciales}
@@ -95,11 +96,10 @@ function DashboardLayout({ children, titulo, acciones, dark = false }) {
 
             <button
               onClick={handleLogout}
-              className={`text-sm font-semibold transition-colors px-3 py-1.5 rounded-md whitespace-nowrap ${
-                dark
+              className={`text-sm font-semibold transition-colors px-3 py-1.5 rounded-md whitespace-nowrap ${dark
                   ? 'text-white/70 hover:text-[#F5A300] hover:bg-white/10'
                   : 'text-[#6B6862] hover:text-[#E4002B] hover:bg-[#F7F5F2]'
-              }`}
+                }`}
             >
               Salir
             </button>
@@ -108,9 +108,8 @@ function DashboardLayout({ children, titulo, acciones, dark = false }) {
 
         {user?.rol === 'admin' && (
           <div
-            className={`max-w-6xl mx-auto px-6 flex gap-1 border-t ${
-              dark ? 'border-white/10' : 'border-[#E5E2DC]'
-            }`}
+            className={`max-w-6xl mx-auto px-6 flex gap-1 border-t ${dark ? 'border-white/10' : 'border-[#E5E2DC]'
+              }`}
           >
             {TABS_ADMIN.map((tab) => {
               const activo = location.pathname === tab.path
@@ -119,13 +118,12 @@ function DashboardLayout({ children, titulo, acciones, dark = false }) {
                 <Link
                   key={tab.path}
                   to={tab.path}
-                  className={`text-sm font-semibold px-4 py-2.5 border-b-2 transition-colors ${
-                    activo
+                  className={`text-sm font-semibold px-4 py-2.5 border-b-2 transition-colors ${activo
                       ? 'border-[#E4002B] text-[#E4002B]'
                       : dark
                         ? 'border-transparent text-white/60 hover:text-white'
                         : 'border-transparent text-[#6B6862] hover:text-[#1A1A1A]'
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </Link>
@@ -138,17 +136,15 @@ function DashboardLayout({ children, titulo, acciones, dark = false }) {
       </header>
 
       <main
-        className={`max-w-6xl mx-auto px-6 py-8 ${
-          dark
+        className={`max-w-6xl mx-auto px-6 py-8 ${dark
             ? 'min-h-[calc(100vh-67px)] bg-[radial-gradient(circle_at_top,#5c2f1f_0%,#120C08_45%,#050505_100%)]'
             : ''
-        }`}
+          }`}
       >
         <div className="flex items-center justify-between mb-6">
           <h2
-            className={`text-2xl font-semibold tracking-tight ${
-              dark ? 'text-white' : 'text-[#1A1A1A]'
-            }`}
+            className={`text-2xl font-semibold tracking-tight ${dark ? 'text-white' : 'text-[#1A1A1A]'
+              }`}
           >
             {titulo}
           </h2>

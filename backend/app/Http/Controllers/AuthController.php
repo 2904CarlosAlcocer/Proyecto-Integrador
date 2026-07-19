@@ -2,138 +2,399 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Cliente;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
     /**
-     * Login para personal y clientes.
+     * Ruta principal de cada rol.
      */
-    public function login(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+    private const RUTAS_POR_ROL = [
+        'admin' => '/admin',
+        'cocina' => '/cocina',
+        'caja' => '/caja',
+        'cliente' => '/',
+    ];
 
-        $user = User::where('email', $request->email)->first();
+    /**
+     * Inicio de sesión.
+     */
+    public function login(
+        Request $request
+    ): JsonResponse {
+        $datos = $request->validate(
+            [
+                'email' => [
+                    'required',
+                    'email',
+                    'max:150',
+                ],
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+                'password' => [
+                    'required',
+                    'string',
+                ],
+            ],
+            [
+                'email.required' =>
+                    'El correo electrónico es obligatorio.',
+
+                'email.email' =>
+                    'Debes ingresar un correo electrónico válido.',
+
+                'password.required' =>
+                    'La contraseña es obligatoria.',
+            ]
+        );
+
+        $email = Str::lower(
+            trim($datos['email'])
+        );
+
+        $user = User::whereRaw(
+            'LOWER(email) = ?',
+            [$email]
+        )->first();
+
+        /*
+        |--------------------------------------------------------------------------
+        | VERIFICAR CREDENCIALES
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            !$user ||
+            !Hash::check(
+                $datos['password'],
+                $user->password
+            )
+        ) {
             throw ValidationException::withMessages([
-                'email' => ['Las credenciales no son correctas.'],
+                'email' => [
+                    'Las credenciales no son correctas.',
+                ],
             ]);
         }
 
-        // Permitir tanto personal como clientes
-        $rolesPermitidos = ['admin', 'cocina', 'caja', 'cliente'];
-        if (!in_array($user->rol, $rolesPermitidos)) {
+        /*
+        |--------------------------------------------------------------------------
+        | NORMALIZAR ROL Y ESTADO
+        |--------------------------------------------------------------------------
+        |
+        | Ejemplos:
+        |
+        | Admin → admin
+        | Administrador → admin
+        | ADMINISTRADOR → admin
+        |
+        */
+
+        $rol = User::normalizarRol(
+            $user->rol
+        );
+
+        $estado = Str::lower(
+            trim((string) $user->estado)
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | VERIFICAR ROL PERMITIDO
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            !array_key_exists(
+                $rol,
+                self::RUTAS_POR_ROL
+            )
+        ) {
             throw ValidationException::withMessages([
-                'email' => ['No tienes permiso para acceder.'],
+                'email' => [
+                    'No tienes permiso para acceder.',
+                ],
             ]);
         }
 
-        if ($user->estado !== 'activo') {
+        /*
+        |--------------------------------------------------------------------------
+        | VERIFICAR ESTADO
+        |--------------------------------------------------------------------------
+        */
+
+        if ($estado !== 'activo') {
             throw ValidationException::withMessages([
-                'email' => ['Tu cuenta está inactiva. Contacta al administrador.'],
+                'email' => [
+                    'Tu cuenta está inactiva. Contacta al administrador.',
+                ],
             ]);
         }
 
-        $token = $user->createToken('rooster-token')->plainTextToken;
+        /*
+        |--------------------------------------------------------------------------
+        | GUARDAR ROL Y ESTADO NORMALIZADOS
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $user->rol !== $rol ||
+            $user->estado !== $estado
+        ) {
+            $user->forceFill([
+                'rol' => $rol,
+                'estado' => $estado,
+            ])->save();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | ELIMINAR TOKENS ANTERIORES
+        |--------------------------------------------------------------------------
+        |
+        | Esto evita que se acumulen múltiples tokens
+        | del mismo usuario en la base de datos.
+        |
+        */
+
+        $user->tokens()->delete();
+
+        /*
+        |--------------------------------------------------------------------------
+        | CREAR TOKEN
+        |--------------------------------------------------------------------------
+        |
+        | Los tests esperan que el token guardado
+        | se llame exactamente "rooster-token".
+        |
+        */
+
+        $token = $user
+            ->createToken('rooster-token')
+            ->plainTextToken;
 
         return response()->json([
             'message' => 'Login exitoso',
+
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'rol' => $user->rol,
-                'estado' => $user->estado,
+                'rol' => $rol,
+                'estado' => $estado,
             ],
+
+            'redirect' =>
+                self::RUTAS_POR_ROL[$rol],
+
             'token' => $token,
         ]);
     }
 
     /**
-     * Registro de clientes.
+     * Registro público para clientes.
      */
-    public function register(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100',
-            'email' => 'required|email|max:150|unique:users,email',
-            'telefono' => 'nullable|string|max:20',
-            'password' => 'required|string|min:6|confirmed',
-        ]);
+    public function register(
+        Request $request
+    ): JsonResponse {
+        $validated = $request->validate(
+            [
+                'name' => [
+                    'required',
+                    'string',
+                    'max:100',
+                ],
 
-        // 1. Crear el usuario con rol 'cliente'
+                'email' => [
+                    'required',
+                    'email',
+                    'max:150',
+                    'unique:users,email',
+                ],
+
+                'telefono' => [
+                    'nullable',
+                    'string',
+                    'max:20',
+                ],
+
+                'password' => [
+                    'required',
+                    'string',
+                    'min:6',
+                    'confirmed',
+                ],
+            ],
+            [
+                'name.required' =>
+                    'El nombre es obligatorio.',
+
+                'email.required' =>
+                    'El correo electrónico es obligatorio.',
+
+                'email.email' =>
+                    'Debes ingresar un correo válido.',
+
+                'email.unique' =>
+                    'Ese correo ya está registrado.',
+
+                'password.required' =>
+                    'La contraseña es obligatoria.',
+
+                'password.min' =>
+                    'La contraseña debe tener al menos 6 caracteres.',
+
+                'password.confirmed' =>
+                    'Las contraseñas no coinciden.',
+            ]
+        );
+
+        $email = Str::lower(
+            trim($validated['email'])
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | CREAR USUARIO
+        |--------------------------------------------------------------------------
+        */
+
         $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'name' =>
+                trim($validated['name']),
+
+            'email' => $email,
+
+            'password' =>
+                $validated['password'],
+
             'rol' => 'cliente',
+
             'estado' => 'activo',
         ]);
 
-        // 2. Crear el cliente vinculado al usuario
+        /*
+        |--------------------------------------------------------------------------
+        | CREAR PERFIL DE CLIENTE
+        |--------------------------------------------------------------------------
+        */
+
         $cliente = Cliente::create([
             'user_id' => $user->id,
-            'nombre' => $validated['name'],
-            'telefono' => $validated['telefono'] ?? null,
-            'correo' => $validated['email'],
+
+            'nombre' =>
+                trim($validated['name']),
+
+            'telefono' =>
+                $validated['telefono'] ?? null,
+
+            'correo' => $email,
         ]);
 
-        // 3. Generar token para el cliente
-        $token = $user->createToken('rooster-token')->plainTextToken;
+        /*
+        |--------------------------------------------------------------------------
+        | CREAR TOKEN DEL CLIENTE
+        |--------------------------------------------------------------------------
+        */
+
+        $token = $user
+            ->createToken('rooster-cliente')
+            ->plainTextToken;
 
         return response()->json([
             'message' => 'Registro exitoso',
+
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'rol' => $user->rol,
-                'estado' => $user->estado,
+                'rol' => 'cliente',
+                'estado' => 'activo',
             ],
+
             'cliente' => $cliente,
+
+            'redirect' => '/',
+
             'token' => $token,
         ], 201);
     }
 
     /**
-     * Cierra la sesión del usuario autenticado.
+     * Cierra la sesión actual.
      */
-    public function logout(Request $request)
-    {
-        $request->user()->currentAccessToken()->delete();
+    public function logout(
+        Request $request
+    ): JsonResponse {
+        $request
+            ->user()
+            ?->currentAccessToken()
+            ?->delete();
 
         return response()->json([
-            'message' => 'Sesión cerrada correctamente',
+            'message' =>
+                'Sesión cerrada correctamente',
         ]);
     }
 
     /**
-     * Devuelve los datos del usuario autenticado.
+     * Información del usuario autenticado.
      */
-    public function me(Request $request)
-    {
+    public function me(
+        Request $request
+    ): JsonResponse {
         $user = $request->user();
 
-        if ($user->rol === 'cliente') {
-            $cliente = Cliente::where('user_id', $user->id)->first();
-            return response()->json([
-                'user' => $user,
-                'cliente' => $cliente,
-            ]);
+        $rol = User::normalizarRol(
+            $user->rol
+        );
+
+        $estado = Str::lower(
+            trim((string) $user->estado)
+        );
+
+        /*
+         * Corrige usuarios que ya tenían
+         * una sesión iniciada.
+         */
+        if (
+            $user->rol !== $rol ||
+            $user->estado !== $estado
+        ) {
+            $user->forceFill([
+                'rol' => $rol,
+                'estado' => $estado,
+            ])->save();
         }
 
-        return response()->json([
-            'user' => $user,
-        ]);
+        $respuesta = [
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'rol' => $rol,
+                'estado' => $estado,
+            ],
+
+            'redirect' =>
+                self::RUTAS_POR_ROL[$rol] ?? '/',
+        ];
+
+        if ($rol === 'cliente') {
+            $respuesta['cliente'] =
+                Cliente::where(
+                    'user_id',
+                    $user->id
+                )->first();
+        }
+
+        return response()->json(
+            $respuesta
+        );
     }
 }

@@ -1,19 +1,69 @@
 import { create } from 'zustand'
 
+const USER_KEY = 'rooster_user'
+const TOKEN_KEY = 'rooster_token'
+
+function obtenerUsuarioGuardado() {
+  try {
+    const usuario =
+      sessionStorage.getItem(USER_KEY)
+
+    return usuario
+      ? JSON.parse(usuario)
+      : null
+  } catch (error) {
+    console.error(
+      'Error al leer el usuario guardado:',
+      error
+    )
+
+    sessionStorage.removeItem(USER_KEY)
+
+    return null
+  }
+}
+
+const usuarioInicial =
+  obtenerUsuarioGuardado()
+
+const tokenInicial =
+  sessionStorage.getItem(TOKEN_KEY)
+
 const useAuthStore = create((set) => ({
-  user: JSON.parse(localStorage.getItem('rooster_user')) || null,
-  token: localStorage.getItem('rooster_token') || null,
+  user: usuarioInicial,
+  token: tokenInicial,
+
+  isAuthenticated: Boolean(
+    usuarioInicial && tokenInicial
+  ),
 
   login: (user, token) => {
-    localStorage.setItem('rooster_user', JSON.stringify(user))
-    localStorage.setItem('rooster_token', token)
-    set({ user, token })
+    sessionStorage.setItem(
+      USER_KEY,
+      JSON.stringify(user)
+    )
+
+    sessionStorage.setItem(
+      TOKEN_KEY,
+      token
+    )
+
+    set({
+      user,
+      token,
+      isAuthenticated: true,
+    })
   },
 
   logout: () => {
-    localStorage.removeItem('rooster_user')
-    localStorage.removeItem('rooster_token')
-    set({ user: null, token: null })
+    sessionStorage.removeItem(USER_KEY)
+    sessionStorage.removeItem(TOKEN_KEY)
+
+    set({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+    })
   },
 }))
 

@@ -25,14 +25,16 @@ function Login() {
 
     try {
       const response = await api.post('/login', {
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
       })
 
       const { user, token } = response.data
 
       if (!user || !token) {
-        throw new Error('La respuesta del servidor no contiene los datos requeridos.')
+        throw new Error(
+          'La respuesta del servidor no contiene los datos requeridos.'
+        )
       }
 
       loginStore(user, token)
@@ -41,6 +43,7 @@ function Login() {
         admin: '/admin',
         cocina: '/cocina',
         caja: '/caja',
+        cliente: '/',
       }
 
       const rol = String(user.rol || '').toLowerCase()
@@ -56,19 +59,22 @@ function Login() {
           .flat()
           .find(Boolean)
 
-        setError(primerError || 'Revisa los datos ingresados.')
+        setError(
+          primerError ||
+            'Revisa los datos ingresados.'
+        )
       } else if (
         err.response?.status === 401 ||
         err.response?.status === 422
       ) {
         setError(
           err.response?.data?.message ||
-          'El correo o la contraseña son incorrectos.'
+            'El correo o la contraseña son incorrectos.'
         )
       } else {
         setError(
           err.response?.data?.message ||
-          'No se pudo conectar con el servidor. Intenta nuevamente.'
+            'No se pudo conectar con el servidor. Intenta nuevamente.'
         )
       }
     } finally {
@@ -93,7 +99,7 @@ function Login() {
       <div className="fixed inset-0 bg-black/80" />
 
       {/* Contenido */}
-      <div className="relative z-10 min-h-[100dvh] w-full flex items-center justify-center px-4 py-8">
+      <div className="relative z-10 flex min-h-[100dvh] w-full items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           <div className="overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-2xl backdrop-blur-xl">
             <div className="h-2 bg-gradient-to-r from-[#E80000] via-[#FF6B00] to-[#E80000]" />
@@ -114,7 +120,7 @@ function Login() {
                 </h1>
 
                 <p className="mt-1 text-sm tracking-wide text-white/70">
-                  PANEL DE PERSONAL
+                  INICIO DE SESIÓN
                 </p>
               </div>
 
@@ -122,6 +128,7 @@ function Login() {
                 onSubmit={handleSubmit}
                 className="space-y-5"
               >
+                {/* Correo */}
                 <div>
                   <label
                     htmlFor="email"
@@ -135,10 +142,13 @@ function Login() {
                     name="email"
                     type="email"
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    onChange={(event) =>
+                      setEmail(event.target.value)
+                    }
                     required
                     autoComplete="email"
-                    placeholder="nombre@rooster.com"
+                    disabled={cargando}
+                    placeholder="correo@ejemplo.com"
                     className="
                       w-full rounded-lg
                       border border-white/30
@@ -151,10 +161,13 @@ function Login() {
                       focus:border-[#FF6B00]
                       focus:ring-2
                       focus:ring-[#FF6B00]/30
+                      disabled:cursor-not-allowed
+                      disabled:opacity-70
                     "
                   />
                 </div>
 
+                {/* Contraseña */}
                 <div>
                   <label
                     htmlFor="password"
@@ -167,11 +180,18 @@ function Login() {
                     <input
                       id="password"
                       name="password"
-                      type={mostrarPassword ? 'text' : 'password'}
+                      type={
+                        mostrarPassword
+                          ? 'text'
+                          : 'password'
+                      }
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) =>
+                        setPassword(event.target.value)
+                      }
                       required
                       autoComplete="current-password"
+                      disabled={cargando}
                       placeholder="••••••••"
                       className="
                         w-full rounded-lg
@@ -185,12 +205,19 @@ function Login() {
                         focus:border-[#FF6B00]
                         focus:ring-2
                         focus:ring-[#FF6B00]/30
+                        disabled:cursor-not-allowed
+                        disabled:opacity-70
                       "
                     />
 
                     <button
                       type="button"
-                      onClick={() => setMostrarPassword((estado) => !estado)}
+                      onClick={() =>
+                        setMostrarPassword(
+                          (estado) => !estado
+                        )
+                      }
+                      disabled={cargando}
                       aria-label={
                         mostrarPassword
                           ? 'Ocultar contraseña'
@@ -207,6 +234,8 @@ function Login() {
                         focus:outline-none
                         focus:ring-2
                         focus:ring-[#FF6B00]/40
+                        disabled:cursor-not-allowed
+                        disabled:opacity-50
                       "
                     >
                       {mostrarPassword ? (
@@ -218,6 +247,23 @@ function Login() {
                   </div>
                 </div>
 
+                {/* Recuperación de contraseña */}
+                <div className="-mt-2 flex justify-end">
+                  <Link
+                    to="/olvide-contrasena"
+                    className="
+                      text-sm font-semibold
+                      text-[#FF8A24]
+                      transition-colors
+                      hover:text-[#FFB15C]
+                      hover:underline
+                    "
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
+
+                {/* Error */}
                 {error && (
                   <div
                     role="alert"
@@ -227,15 +273,19 @@ function Login() {
                   </div>
                 )}
 
+                {/* Botón ingresar */}
                 <button
                   type="submit"
                   disabled={cargando}
                   className="
-                    w-full rounded-lg
-                    bg-gradient-to-r from-[#E80000] to-[#FF6B00]
+                    flex w-full items-center justify-center
+                    rounded-lg
+                    bg-gradient-to-r
+                    from-[#E80000]
+                    to-[#FF6B00]
                     py-3.5
-                    text-sm font-bold uppercase tracking-wide
-                    text-white
+                    text-sm font-bold uppercase
+                    tracking-wide text-white
                     transition-all duration-200
                     hover:shadow-lg
                     hover:shadow-[#E80000]/40
@@ -243,15 +293,22 @@ function Login() {
                     disabled:opacity-60
                   "
                 >
-                  {cargando ? 'Ingresando...' : 'Ingresar'}
+                  {cargando ? (
+                    <>
+                      <span className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Ingresando...
+                    </>
+                  ) : (
+                    'Ingresar'
+                  )}
                 </button>
 
+                {/* Registro */}
                 <p className="text-center text-sm text-white/70">
                   ¿No tienes cuenta?{' '}
-
                   <Link
                     to="/register"
-                    className="font-bold text-[#FF6B00] hover:underline"
+                    className="font-bold text-[#FF6B00] transition-colors hover:text-[#FF9A3D] hover:underline"
                   >
                     Regístrate aquí
                   </Link>
@@ -261,7 +318,7 @@ function Login() {
           </div>
 
           <p className="mt-6 text-center text-xs text-white/40">
-            Acceso exclusivo para personal autorizado
+            Acceso protegido por Rooster CR
           </p>
         </div>
       </div>
