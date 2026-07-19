@@ -29,6 +29,48 @@ class RolMiddleware
 
         /*
         |--------------------------------------------------------------------------
+        | VERIFICAR ESTADO DEL USUARIO
+        |--------------------------------------------------------------------------
+        |
+        | Aunque el token de Sanctum sea válido, una cuenta inactiva no debe
+        | conservar acceso al sistema.
+        |
+        */
+
+        $estadoUsuario = strtolower(
+            trim((string) $usuario->estado)
+        );
+
+        /*
+         * Normalizar el estado almacenado.
+         *
+         * Ejemplos:
+         *
+         * ACTIVO    → activo
+         * Inactivo  → inactivo
+         */
+
+        if ($usuario->estado !== $estadoUsuario) {
+            $usuario->forceFill([
+                'estado' => $estadoUsuario,
+            ])->save();
+        }
+
+        if ($estadoUsuario !== 'activo') {
+            /*
+             * Elimina todos los tokens anteriores para cerrar
+             * cualquier sesión que permaneciera abierta.
+             */
+            $usuario->tokens()->delete();
+
+            return response()->json([
+                'message' =>
+                    'Tu cuenta está inactiva. Contacta al administrador.',
+            ], 403);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | NORMALIZAR ROLES RECIBIDOS
         |--------------------------------------------------------------------------
         |
@@ -118,6 +160,7 @@ class RolMiddleware
              * devolvemos el mensaje específico
              * esperado para gestión de pedidos.
              */
+
             $esRutaGestionPedidos =
                 $this->esRutaGestionPedidos(
                     $request,
