@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Ingrediente extends Model
 {
@@ -10,15 +11,34 @@ class Ingrediente extends Model
 
     protected $fillable = [
         'nombre',
+        'precio_extra',
         'estado',
     ];
 
-    public function productos()
+    protected function casts(): array
     {
-        return $this->belongsToMany(Producto::class, 'producto_ingredientes');
+        return [
+            'precio_extra' => 'decimal:2',
+        ];
     }
 
-    public function getEstaDisponibleAttribute()
+    /**
+     * Productos que utilizan este ingrediente como ingrediente base.
+     */
+    public function productos(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Producto::class,
+            'producto_ingredientes',
+            'ingrediente_id',
+            'producto_id'
+        );
+    }
+
+    /**
+     * Indica si el ingrediente puede seleccionarse como extra.
+     */
+    public function getEstaDisponibleAttribute(): bool
     {
         return $this->estado === 'disponible';
     }

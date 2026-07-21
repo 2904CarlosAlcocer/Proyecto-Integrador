@@ -240,6 +240,40 @@ export default function Carrito() {
     puedeCancelar,
   ])
 
+  /*
+   * Devuelve el nombre de una opción guardada
+   * dentro de la personalización visual del carrito.
+   */
+  const obtenerNombreOpcion = (opcion) => {
+    if (typeof opcion === 'string') {
+      return opcion.trim()
+    }
+
+    return String(
+      opcion?.nombre || ''
+    ).trim()
+  }
+
+  const obtenerNombresOpciones = (
+    opciones
+  ) => {
+    if (!Array.isArray(opciones)) {
+      return []
+    }
+
+    return opciones
+      .map(obtenerNombreOpcion)
+      .filter(Boolean)
+  }
+
+  /*
+   * Muestra una descripción clara de pizzas,
+   * pastas y acompañamientos.
+   *
+   * Los datos de personalizacion se utilizan
+   * únicamente para mostrar la selección. Laravel
+   * vuelve a consultar nombres y precios en la BD.
+   */
   const renderExtrasYObservaciones = (
     item
   ) => {
@@ -249,6 +283,143 @@ export default function Carrito() {
       detalles.push(
         `➕ Extras: ${item.extras}`
       )
+    }
+
+    const personalizacion =
+      item.personalizacion &&
+      typeof item.personalizacion ===
+        'object' &&
+      !Array.isArray(
+        item.personalizacion
+      )
+        ? item.personalizacion
+        : null
+
+    if (
+      personalizacion?.tipo ===
+      'pasta'
+    ) {
+      const tipoPasta =
+        obtenerNombreOpcion(
+          personalizacion.tipo_pasta
+        )
+
+      const proteinas =
+        obtenerNombresOpciones(
+          personalizacion.proteinas
+        )
+
+      const salsa =
+        obtenerNombreOpcion(
+          personalizacion.salsa
+        )
+
+      const ingredientes =
+        obtenerNombresOpciones(
+          personalizacion.ingredientes
+        )
+
+      if (tipoPasta) {
+        detalles.push(
+          `🍝 Pasta: ${tipoPasta}`
+        )
+      }
+
+      detalles.push(
+        `🥩 Proteínas: ${
+          proteinas.length > 0
+            ? proteinas.join(', ')
+            : 'Sin proteína'
+        }`
+      )
+
+      detalles.push(
+        `🥣 Salsa: ${
+          salsa || 'Sin salsa'
+        }`
+      )
+
+      detalles.push(
+        `🧄 Ingredientes: ${
+          ingredientes.length > 0
+            ? ingredientes.join(', ')
+            : 'Sin adicionales'
+        }`
+      )
+    }
+
+    if (
+      personalizacion?.tipo ===
+      'acompanamientos'
+    ) {
+      const acompanamientos =
+        Array.isArray(
+          personalizacion
+            .acompanamientos
+        )
+          ? personalizacion
+              .acompanamientos
+          : []
+
+      const incluidos =
+        acompanamientos
+          .filter(
+            (acompanamiento) =>
+              acompanamiento?.incluido !==
+              false
+          )
+          .map(obtenerNombreOpcion)
+          .filter(Boolean)
+
+      const adicionales =
+        acompanamientos
+          .filter(
+            (acompanamiento) =>
+              acompanamiento?.incluido ===
+              false
+          )
+          .map((acompanamiento) => {
+            const nombre =
+              obtenerNombreOpcion(
+                acompanamiento
+              )
+
+            const precio =
+              Number(
+                acompanamiento
+                  ?.precio_aplicado ??
+                acompanamiento
+                  ?.precio_extra ??
+                0
+              )
+
+            if (!nombre) {
+              return ''
+            }
+
+            return precio > 0
+              ? `${nombre} (+₡${formatearPrecio(
+                  precio
+                )})`
+              : nombre
+          })
+          .filter(Boolean)
+
+      detalles.push(
+        `🥗 Incluidos: ${
+          incluidos.length > 0
+            ? incluidos.join(', ')
+            : 'Ninguno'
+        }`
+      )
+
+      if (adicionales.length > 0) {
+        detalles.push(
+          `➕ Adicionales: ${adicionales.join(
+            ', '
+          )}`
+        )
+      }
     }
 
     if (item.observaciones) {
@@ -266,8 +437,9 @@ export default function Carrito() {
         {detalles.map(
           (detalle, indice) => (
             <p
-              key={indice}
+              key={`${indice}-${detalle}`}
               className="truncate"
+              title={detalle}
             >
               {detalle}
             </p>
@@ -278,9 +450,24 @@ export default function Carrito() {
   }
 
   const tieneExtras = (item) => {
+    const tienePasta =
+      item.pasta &&
+      typeof item.pasta ===
+        'object'
+
+    const tieneAcompanamientos =
+      Array.isArray(
+        item.acompanamientos_ids
+      ) &&
+      item.acompanamientos_ids
+        .length > 0
+
     return Boolean(
       item.extras ||
-      item.observaciones
+      item.observaciones ||
+      tienePasta ||
+      tieneAcompanamientos ||
+      item.personalizacion
     )
   }
 
@@ -427,17 +614,103 @@ export default function Carrito() {
           pedidoEnEspera.metodoPago
         )
 
+        /*
+         * React envía únicamente identificadores.
+         * Laravel vuelve a consultar disponibilidad,
+         * grupos y precios en la base de datos.
+         */
         const productosPayload =
           pedidoEnEspera.items.map(
-            (item) => ({
-              producto_id: item.id,
-              cantidad: item.cantidad,
-              extras:
-                item.extras || null,
-              observaciones:
-                item.observaciones ||
-                null,
-            })
+            (item) => {
+              const pasta =
+                item.pasta &&
+                typeof item.pasta ===
+                  'object' &&
+                !Array.isArray(
+                  item.pasta
+                )
+                  ? {
+                      tipo_pasta_id:
+                        item.pasta
+                          .tipo_pasta_id ??
+                        null,
+
+                      proteina_ids:
+                        Array.isArray(
+                          item.pasta
+                            .proteina_ids
+                        )
+                          ? item.pasta
+                              .proteina_ids
+                          : [],
+
+                      salsa_id:
+                        item.pasta
+                          .salsa_id ??
+                        null,
+
+                      ingrediente_ids:
+                        Array.isArray(
+                          item.pasta
+                            .ingrediente_ids
+                        )
+                          ? item.pasta
+                              .ingrediente_ids
+                          : [],
+                    }
+                  : null
+
+              return {
+                producto_id:
+                  item.producto_id ??
+                  item.id,
+
+                cantidad:
+                  Number(
+                    item.cantidad
+                  ) || 1,
+
+                /*
+                 * Personalización existente
+                 * de pizzas.
+                 */
+                extras:
+                  item.extras || null,
+
+                extras_ids:
+                  Array.isArray(
+                    item.extras_ids
+                  )
+                    ? item.extras_ids
+                    : [],
+
+                /*
+                 * Nueva personalización
+                 * de pastas.
+                 */
+                pasta,
+
+                /*
+                 * El orden se conserva porque
+                 * los primeros dos son incluidos.
+                 */
+                acompanamientos_ids:
+                  Array.isArray(
+                    item.acompanamientos_ids
+                  )
+                    ? item
+                        .acompanamientos_ids
+                    : [],
+
+                observaciones:
+                  item.observaciones ||
+                  null,
+
+                alergias:
+                  item.alergias ||
+                  null,
+              }
+            }
           )
 
         formData.append(
@@ -491,9 +764,24 @@ export default function Carrito() {
 
         setMostrarModalEspera(false)
 
+        const erroresValidacion =
+          err.response?.data?.errors
+
+        const primerError =
+          erroresValidacion &&
+          typeof erroresValidacion ===
+            'object'
+            ? Object.values(
+                erroresValidacion
+              )
+                .flat()
+                .find(Boolean)
+            : null
+
         setMensaje({
           tipo: 'error',
           texto:
+            primerError ||
             err.response?.data
               ?.message ||
             'No se pudo crear el pedido.',
@@ -503,13 +791,21 @@ export default function Carrito() {
       }
     }
 
+  const obtenerIdentificadorLinea = (
+    item
+  ) => {
+    return item.linea_id ?? item.id
+  }
+
   const handleCantidad = (
-    productoId,
+    identificadorLinea,
     delta
   ) => {
     const item = items.find(
       (producto) =>
-        producto.id === productoId
+        obtenerIdentificadorLinea(
+          producto
+        ) === identificadorLinea
     )
 
     if (!item) {
@@ -517,15 +813,18 @@ export default function Carrito() {
     }
 
     const nuevaCantidad =
-      item.cantidad + delta
+      Number(item.cantidad) + delta
 
     if (nuevaCantidad <= 0) {
-      eliminarProducto(productoId)
+      eliminarProducto(
+        identificadorLinea
+      )
+
       return
     }
 
     actualizarCantidad(
-      productoId,
+      identificadorLinea,
       nuevaCantidad
     )
   }
@@ -683,79 +982,64 @@ export default function Carrito() {
 
                   {items.map((item) => (
                     <div
-                      key={item.id}
-                      className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/50 p-4 backdrop-blur-sm"
+                      key={obtenerIdentificadorLinea(item)}
+                      className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-3 rounded-2xl border border-white/10 bg-black/50 p-3 backdrop-blur-sm sm:grid-cols-[80px_minmax(0,1fr)_auto] sm:gap-x-4 sm:p-4"
                     >
-                      <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-black/50">
+                      <div className="h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-xl bg-black/50 sm:h-20 sm:w-20">
                         {item.imagen_url ? (
                           <img
-                            src={
-                              item.imagen_url
-                            }
-                            alt={
-                              item.nombre
-                            }
+                            src={item.imagen_url}
+                            alt={item.nombre}
                             className="h-full w-full object-cover"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-3xl text-white/20">
                             {item.nombre
                               .toLowerCase()
-                              .includes(
-                                'pizza'
-                              )
+                              .includes('pizza')
                               ? '🍕'
                               : '🍽️'}
                           </div>
                         )}
                       </div>
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-bold text-white">
+                      <div className="min-w-0 self-start sm:self-center">
+                        <div className="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
+                          <h4 className="line-clamp-2 text-sm font-bold leading-tight text-white sm:text-base">
                             {item.nombre}
                           </h4>
 
-                          {tieneExtras(
-                            item
-                          ) && (
-                              <span className="rounded-full bg-[#F5A300]/20 px-1.5 py-0.5 text-[8px] text-[#F5A300]">
-                                Personalizado
-                              </span>
-                            )}
+                          {tieneExtras(item) && (
+                            <span className="shrink-0 rounded-full bg-[#F5A300]/20 px-1.5 py-0.5 text-[8px] text-[#F5A300]">
+                              Personalizado
+                            </span>
+                          )}
                         </div>
 
-                        <p className="font-mono text-sm font-bold text-[#F5A300]">
-                          ₡
-                          {formatearPrecio(
-                            item.precio
-                          )}{' '}
-                          c/u
+                        <p className="mt-1 whitespace-nowrap font-mono text-sm font-bold text-[#F5A300]">
+                          ₡{formatearPrecio(item.precio)} c/u
                         </p>
 
-                        {renderExtrasYObservaciones(
-                          item
-                        )}
+                        {renderExtrasYObservaciones(item)}
                       </div>
 
-                      <div className="flex flex-shrink-0 items-center gap-3">
-                        <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5">
+                      <div className="col-span-2 flex w-full items-center justify-between gap-3 border-t border-white/10 pt-3 sm:col-span-1 sm:col-start-3 sm:row-start-1 sm:border-0 sm:pt-0">
+                        <div className="flex h-9 shrink-0 items-center overflow-hidden rounded-lg border border-white/10 bg-white/5">
                           <button
                             type="button"
                             onClick={() =>
                               handleCantidad(
-                                item.id,
+                                obtenerIdentificadorLinea(item),
                                 -1
                               )
                             }
-                            className="flex h-7 w-7 items-center justify-center text-white/60 hover:text-[#F5A300]"
+                            aria-label={`Disminuir cantidad de ${item.nombre}`}
+                            className="flex h-9 w-9 items-center justify-center text-white/60 transition hover:bg-white/10 hover:text-[#F5A300]"
                           >
-                            <Minus
-                              size={14}
-                            />
+                            <Minus size={14} />
                           </button>
 
-                          <span className="w-6 text-center text-sm font-bold text-white">
+                          <span className="w-8 select-none text-center text-sm font-bold text-white">
                             {item.cantidad}
                           </span>
 
@@ -763,40 +1047,34 @@ export default function Carrito() {
                             type="button"
                             onClick={() =>
                               handleCantidad(
-                                item.id,
+                                obtenerIdentificadorLinea(item),
                                 1
                               )
                             }
-                            className="flex h-7 w-7 items-center justify-center text-white/60 hover:text-[#F5A300]"
+                            aria-label={`Aumentar cantidad de ${item.nombre}`}
+                            className="flex h-9 w-9 items-center justify-center text-white/60 transition hover:bg-white/10 hover:text-[#F5A300]"
                           >
-                            <Plus
-                              size={14}
-                            />
+                            <Plus size={14} />
                           </button>
                         </div>
 
-                        <div className="min-w-[80px] text-right">
-                          <p className="font-mono text-sm font-bold text-white">
-                            ₡
-                            {formatearPrecio(
-                              item.precio *
-                              item.cantidad
-                            )}
-                          </p>
-                        </div>
+                        <p className="ml-auto whitespace-nowrap font-mono text-sm font-bold text-white sm:min-w-[82px] sm:text-right">
+                          ₡{formatearPrecio(
+                            item.precio * item.cantidad
+                          )}
+                        </p>
 
                         <button
                           type="button"
                           onClick={() =>
                             eliminarProducto(
-                              item.id
+                              obtenerIdentificadorLinea(item)
                             )
                           }
-                          className="text-white/30 hover:text-[#E4002B]"
+                          aria-label={`Eliminar ${item.nombre}`}
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/30 transition hover:bg-[#E4002B]/15 hover:text-[#E4002B]"
                         >
-                          <Trash2
-                            size={16}
-                          />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </div>
@@ -896,7 +1174,9 @@ export default function Carrito() {
                         (item) => (
                           <div
                             key={
-                              item.id
+                              obtenerIdentificadorLinea(
+                                item
+                              )
                             }
                             className="flex justify-between text-sm"
                           >

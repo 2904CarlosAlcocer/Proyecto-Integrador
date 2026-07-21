@@ -17,7 +17,7 @@ import {
   X,
 } from 'lucide-react'
 
-const INTERVALO_ACTUALIZACION = 15000
+const INTERVALO_ACTUALIZACION = 2000
 const DURACION_ALERTA_VISUAL = 12000
 const VOLUMEN_ALERTA = 5.2
 
@@ -548,7 +548,7 @@ function CocinaDashboard() {
           </p>
 
           <p className="mt-0.5 text-xs text-white/45">
-            La cocina se actualiza automáticamente cada 15
+            La cocina se actualiza automáticamente cada 2
             segundos.
           </p>
         </div>

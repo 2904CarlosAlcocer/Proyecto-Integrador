@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | ntfy
+    |--------------------------------------------------------------------------
+    |
+    | Configuración para enviar notificaciones cuando se crea un pedido.
+    | Los valores reales se obtienen desde el archivo .env.
+    |
+    */
+
+    'ntfy' => [
+        'enabled' => env('NTFY_ENABLED', true),
+        'server' => env('NTFY_SERVER', 'https://ntfy.sh'),
+        'topic' => env('NTFY_TOPIC'),
+    ],
+
 ];

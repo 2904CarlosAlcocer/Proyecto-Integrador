@@ -1,170 +1,638 @@
 import { useState } from 'react'
-import { Plus, Minus, X, Check, Pizza } from 'lucide-react'
+import {
+  Plus,
+  X,
+  Check,
+  Pizza,
+} from 'lucide-react'
 
-export default function PersonalizadorPizza({ 
-  producto, 
-  onConfirmar, 
+export default function PersonalizadorPizza({
+  producto,
+  onConfirmar,
   onCancelar,
-  extrasDisponibles = [] 
+  extrasDisponibles = [],
 }) {
-  const [extrasSeleccionados, setExtrasSeleccionados] = useState([])
-  const [observaciones, setObservaciones] = useState('')
-  const [mostrarExtras, setMostrarExtras] = useState(false)
+  const [
+    extrasSeleccionados,
+    setExtrasSeleccionados,
+  ] = useState([])
+
+  const [
+    observaciones,
+    setObservaciones,
+  ] = useState('')
+
+  const [
+    mostrarExtras,
+    setMostrarExtras,
+  ] = useState(false)
+
+  /*
+  |--------------------------------------------------------------------------
+  | SELECCIONAR O QUITAR UN INGREDIENTE EXTRA
+  |--------------------------------------------------------------------------
+  */
 
   const toggleExtra = (extra) => {
-    setExtrasSeleccionados(prev => {
-      const existe = prev.find(e => e.id === extra.id)
-      if (existe) {
-        return prev.filter(e => e.id !== extra.id)
+    setExtrasSeleccionados(
+      (extrasActuales) => {
+        const yaSeleccionado =
+          extrasActuales.some(
+            (ingrediente) =>
+              ingrediente.id === extra.id
+          )
+
+        if (yaSeleccionado) {
+          return extrasActuales.filter(
+            (ingrediente) =>
+              ingrediente.id !== extra.id
+          )
+        }
+
+        return [
+          ...extrasActuales,
+          extra,
+        ]
       }
-      return [...prev, extra]
-    })
+    )
   }
 
-  // 🔥 FUNCIÓN PARA FORMATEAR PRECIO (SIN DECIMALES)
+  /*
+  |--------------------------------------------------------------------------
+  | FORMATEAR PRECIOS
+  |--------------------------------------------------------------------------
+  */
+
   const formatearPrecio = (monto) => {
-    return monto.toLocaleString('es-CR', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
+    return Number(monto || 0).toLocaleString(
+      'es-CR',
+      {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }
+    )
   }
 
-  // 🔥 FUNCIÓN PARA CALCULAR TOTAL CORRECTAMENTE
-  const calcularTotal = () => {
-    // Asegurar que el precio base es un número
-    let total = parseFloat(producto.precio) || 0
-    
-    // Sumar cada extra correctamente
-    extrasSeleccionados.forEach(extra => {
-      const precioExtra = parseFloat(extra.precio_extra) || 1500
-      total += precioExtra
-    })
-    
-    return total
+  /*
+  |--------------------------------------------------------------------------
+  | CALCULAR PRECIO DE LOS EXTRAS
+  |--------------------------------------------------------------------------
+  |
+  | Ya no existe un precio fijo de ₡1.500.
+  | Cada ingrediente utiliza precio_extra,
+  | recibido desde la base de datos.
+  |
+  */
+
+  const calcularTotalExtras = () => {
+    return extrasSeleccionados.reduce(
+      (total, extra) => {
+        const precioExtra = Number(
+          extra.precio_extra || 0
+        )
+
+        return total + precioExtra
+      },
+      0
+    )
   }
+
+  /*
+  |--------------------------------------------------------------------------
+  | CALCULAR PRECIO TOTAL
+  |--------------------------------------------------------------------------
+  */
+
+  const calcularTotal = () => {
+    const precioBase = Number(
+      producto?.precio || 0
+    )
+
+    const totalExtras =
+      calcularTotalExtras()
+
+    return precioBase + totalExtras
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | CONFIRMAR PERSONALIZACIÓN
+  |--------------------------------------------------------------------------
+  |
+  | Se envían:
+  |
+  | - extras: nombres para mostrarlos en el carrito.
+  | - extras_ids: identificadores para que Laravel
+  |   consulte nuevamente sus precios en la BD.
+  |
+  */
 
   const handleConfirmar = () => {
-    const totalCalculado = calcularTotal()
-    
+    const totalCalculado =
+      calcularTotal()
+
+    const nombresExtras =
+      extrasSeleccionados
+        .map((extra) => extra.nombre)
+        .join(', ')
+
+    const identificadoresExtras =
+      extrasSeleccionados.map(
+        (extra) => extra.id
+      )
+
     onConfirmar({
       producto_id: producto.id,
       nombre: producto.nombre,
       precio: totalCalculado,
       cantidad: 1,
       imagen_url: producto.imagen_url,
-      extras: extrasSeleccionados.map(e => e.nombre).join(', '),
-      observaciones: observaciones,
+
+      extras:
+        nombresExtras || null,
+
+      extras_ids:
+        identificadoresExtras,
+
+      observaciones:
+        observaciones.trim() || null,
+
       personalizacion: {
-        extras: extrasSeleccionados,
-        observaciones: observaciones,
-      }
+        extras:
+          extrasSeleccionados,
+
+        extras_ids:
+          identificadoresExtras,
+
+        observaciones:
+          observaciones.trim() || null,
+      },
     })
   }
 
   return (
-    <div className="fixed inset-0 z-[10000] bg-black/75 backdrop-blur-md flex items-center justify-center px-4 py-6">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[#160F0B] border border-[#F5A300]/30 rounded-3xl shadow-2xl">
-        <div className="h-[4px] bg-gradient-to-r from-[#E4002B] via-[#F5A300] to-[#E4002B]" />
-        
+    <div className="
+      fixed inset-0 z-[10000]
+      flex items-center justify-center
+      bg-black/75
+      px-4 py-6
+      backdrop-blur-md
+    ">
+      <div className="
+        max-h-[90vh]
+        w-full max-w-2xl
+        overflow-y-auto
+        rounded-3xl
+        border border-[#F5A300]/30
+        bg-[#160F0B]
+        shadow-2xl
+      ">
+        <div className="
+          h-[4px]
+          bg-gradient-to-r
+          from-[#E4002B]
+          via-[#F5A300]
+          to-[#E4002B]
+        " />
+
         <div className="p-6">
           {/* HEADER */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Pizza className="w-6 h-6 text-[#F5A300]" />
-              <h2 className="text-xl font-bold text-white">
-                Personalizar {producto.nombre}
+          <div className="
+            mb-4
+            flex items-center justify-between
+          ">
+            <div className="
+              flex items-center gap-3
+            ">
+              <Pizza className="
+                h-6 w-6
+                text-[#F5A300]
+              " />
+
+              <h2 className="
+                text-xl font-bold text-white
+              ">
+                Personalizar{' '}
+                {producto.nombre}
               </h2>
             </div>
-            <button onClick={onCancelar} className="text-white/40 hover:text-[#E4002B]">
+
+            <button
+              type="button"
+              onClick={onCancelar}
+              aria-label="Cerrar personalizador"
+              className="
+                rounded-lg p-1
+                text-white/40
+                transition-colors
+                hover:bg-white/5
+                hover:text-[#E4002B]
+              "
+            >
               <X size={24} />
             </button>
           </div>
 
+          {/* PRECIO BASE */}
+          <div className="
+            mb-4
+            flex items-center justify-between
+            rounded-xl
+            border border-white/10
+            bg-black/20
+            p-3
+          ">
+            <span className="
+              text-sm text-white/60
+            ">
+              Precio de la pizza
+            </span>
+
+            <span className="
+              font-mono
+              text-sm font-bold
+              text-white
+            ">
+              ₡
+              {formatearPrecio(
+                producto.precio
+              )}
+            </span>
+          </div>
+
           {/* INGREDIENTES BASE */}
-          {producto.ingredientes_base && producto.ingredientes_base.length > 0 && (
-            <div className="mb-4 bg-white/5 rounded-xl p-3">
-              <p className="text-white/60 text-xs font-bold uppercase tracking-wide mb-2">
-                Ingredientes base
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {producto.ingredientes_base.map((ing) => (
-                  <span key={ing.id} className="px-2 py-1 bg-[#F5A300]/20 text-[#F5A300] text-xs rounded-lg">
-                    {ing.nombre}
-                  </span>
-                ))}
+          {producto.ingredientes_base &&
+            producto.ingredientes_base
+              .length > 0 && (
+              <div className="
+                mb-4
+                rounded-xl
+                bg-white/5
+                p-3
+              ">
+                <p className="
+                  mb-2
+                  text-xs font-bold
+                  uppercase tracking-wide
+                  text-white/60
+                ">
+                  Ingredientes base
+                </p>
+
+                <div className="
+                  flex flex-wrap gap-2
+                ">
+                  {producto
+                    .ingredientes_base
+                    .map((ingrediente) => (
+                      <span
+                        key={ingrediente.id}
+                        className="
+                          rounded-lg
+                          bg-[#F5A300]/20
+                          px-2 py-1
+                          text-xs
+                          text-[#F5A300]
+                        "
+                      >
+                        {ingrediente.nombre}
+                      </span>
+                    ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* EXTRAS */}
           <div className="mb-4">
             <button
-              onClick={() => setMostrarExtras(!mostrarExtras)}
-              className="text-[#F5A300] font-bold text-sm flex items-center gap-2 hover:underline"
+              type="button"
+              onClick={() =>
+                setMostrarExtras(
+                  (estadoActual) =>
+                    !estadoActual
+                )
+              }
+              className="
+                flex items-center gap-2
+                text-sm font-bold
+                text-[#F5A300]
+                transition-colors
+                hover:text-[#FFD166]
+              "
             >
-              {mostrarExtras ? 'Ocultar' : 'Mostrar'} extras disponibles
-              <Plus size={16} className={mostrarExtras ? 'rotate-45' : ''} />
+              {mostrarExtras
+                ? 'Ocultar extras disponibles'
+                : 'Mostrar extras disponibles'}
+
+              <Plus
+                size={16}
+                className={`
+                  transition-transform
+                  ${
+                    mostrarExtras
+                      ? 'rotate-45'
+                      : 'rotate-0'
+                  }
+                `}
+              />
             </button>
 
             {mostrarExtras && (
-              <div className="mt-2 space-y-2">
-                {extrasDisponibles.map(extra => {
-                  const seleccionado = extrasSeleccionados.some(e => e.id === extra.id)
-                  return (
-                    <button
-                      key={extra.id}
-                      onClick={() => toggleExtra(extra)}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
-                        seleccionado
-                          ? 'border-[#F5A300] bg-[#F5A300]/10 text-[#F5A300]'
-                          : 'border-white/10 text-white/60 hover:text-white'
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        {seleccionado ? <Check size={16} className="text-[#F5A300]" /> : <Plus size={16} />}
-                        {extra.nombre}
-                      </span>
-                      <span className="text-xs font-mono">
-                        +₡{formatearPrecio(extra.precio_extra || 1500)}
-                      </span>
-                    </button>
+              <div className="
+                mt-3 space-y-2
+              ">
+                {extrasDisponibles.length ===
+                0 ? (
+                  <div className="
+                    rounded-xl
+                    border border-white/10
+                    bg-white/5
+                    p-4 text-center
+                  ">
+                    <p className="
+                      text-sm text-white/50
+                    ">
+                      No hay ingredientes
+                      extras disponibles.
+                    </p>
+                  </div>
+                ) : (
+                  extrasDisponibles.map(
+                    (extra) => {
+                      const seleccionado =
+                        extrasSeleccionados.some(
+                          (ingrediente) =>
+                            ingrediente.id ===
+                            extra.id
+                        )
+
+                      return (
+                        <button
+                          key={extra.id}
+                          type="button"
+                          onClick={() =>
+                            toggleExtra(extra)
+                          }
+                          className={`
+                            flex w-full
+                            items-center
+                            justify-between
+                            rounded-xl
+                            border p-3
+                            text-left
+                            transition-all
+                            ${
+                              seleccionado
+                                ? `
+                                  border-[#F5A300]
+                                  bg-[#F5A300]/10
+                                  text-[#F5A300]
+                                `
+                                : `
+                                  border-white/10
+                                  bg-black/20
+                                  text-white/60
+                                  hover:border-white/20
+                                  hover:bg-white/5
+                                  hover:text-white
+                                `
+                            }
+                          `}
+                        >
+                          <span className="
+                            flex items-center gap-2
+                          ">
+                            {seleccionado ? (
+                              <Check
+                                size={16}
+                                className="
+                                  text-[#F5A300]
+                                "
+                              />
+                            ) : (
+                              <Plus size={16} />
+                            )}
+
+                            {extra.nombre}
+                          </span>
+
+                          <span className="
+                            font-mono
+                            text-xs font-bold
+                          ">
+                            +₡
+                            {formatearPrecio(
+                              extra.precio_extra
+                            )}
+                          </span>
+                        </button>
+                      )
+                    }
                   )
-                })}
+                )}
               </div>
             )}
           </div>
 
+          {/* EXTRAS SELECCIONADOS */}
+          {extrasSeleccionados.length >
+            0 && (
+            <div className="
+              mb-4
+              rounded-xl
+              border border-[#F5A300]/20
+              bg-[#F5A300]/5
+              p-3
+            ">
+              <p className="
+                mb-2
+                text-xs font-bold
+                uppercase tracking-wide
+                text-[#F5A300]
+              ">
+                Extras seleccionados
+              </p>
+
+              <div className="space-y-2">
+                {extrasSeleccionados.map(
+                  (extra) => (
+                    <div
+                      key={extra.id}
+                      className="
+                        flex items-center
+                        justify-between
+                        text-sm
+                      "
+                    >
+                      <span className="
+                        text-white/70
+                      ">
+                        {extra.nombre}
+                      </span>
+
+                      <span className="
+                        font-mono
+                        text-[#F5A300]
+                      ">
+                        +₡
+                        {formatearPrecio(
+                          extra.precio_extra
+                        )}
+                      </span>
+                    </div>
+                  )
+                )}
+
+                <div className="
+                  flex items-center
+                  justify-between
+                  border-t
+                  border-[#F5A300]/20
+                  pt-2
+                  text-sm font-bold
+                ">
+                  <span className="
+                    text-white/70
+                  ">
+                    Total extras
+                  </span>
+
+                  <span className="
+                    font-mono
+                    text-[#F5A300]
+                  ">
+                    ₡
+                    {formatearPrecio(
+                      calcularTotalExtras()
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* OBSERVACIONES */}
           <div className="mb-4">
-            <label className="text-white/60 text-xs font-bold uppercase tracking-wide mb-1 block">
+            <label className="
+              mb-1 block
+              text-xs font-bold
+              uppercase tracking-wide
+              text-white/60
+            ">
               📝 Observaciones
             </label>
+
             <textarea
               value={observaciones}
-              onChange={(e) => setObservaciones(e.target.value)}
-              placeholder="Ej: Sin cebolla, bien cocida, extra queso, soy alérgico al marisco, etc."
-              className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white placeholder:text-white/30 focus:border-[#F5A300] outline-none text-sm resize-none h-20"
+              onChange={(event) =>
+                setObservaciones(
+                  event.target.value
+                )
+              }
+              maxLength={2000}
+              placeholder="Ej: Sin cebolla, bien cocida, soy alérgico al marisco, etc."
+              className="
+                h-20 w-full
+                resize-none
+                rounded-xl
+                border border-white/10
+                bg-black/40
+                px-3 py-2
+                text-sm text-white
+                outline-none
+                transition-colors
+                placeholder:text-white/30
+                focus:border-[#F5A300]
+              "
             />
+
+            <p className="
+              mt-1 text-right
+              text-[10px] text-white/30
+            ">
+              {observaciones.length}/2000
+            </p>
           </div>
 
           {/* TOTAL Y BOTONES */}
-          <div className="flex items-center justify-between border-t border-white/10 pt-4">
+          <div className="
+            flex flex-col gap-4
+            border-t border-white/10
+            pt-4
+            sm:flex-row
+            sm:items-center
+            sm:justify-between
+          ">
             <div>
-              <p className="text-white/60 text-xs">Total</p>
-              <p className="text-[#F5A300] font-black text-2xl font-mono">
-                ₡{formatearPrecio(calcularTotal())}
+              <p className="
+                text-xs text-white/60
+              ">
+                Total
               </p>
+
+              <p className="
+                font-mono
+                text-2xl font-black
+                text-[#F5A300]
+              ">
+                ₡
+                {formatearPrecio(
+                  calcularTotal()
+                )}
+              </p>
+
+              {extrasSeleccionados.length >
+                0 && (
+                <p className="
+                  mt-1 text-xs
+                  text-white/40
+                ">
+                  Incluye{' '}
+                  {
+                    extrasSeleccionados.length
+                  }{' '}
+                  {extrasSeleccionados.length ===
+                  1
+                    ? 'extra'
+                    : 'extras'}
+                </p>
+              )}
             </div>
-            <div className="flex gap-2">
+
+            <div className="
+              flex flex-col gap-2
+              sm:flex-row
+            ">
               <button
+                type="button"
                 onClick={onCancelar}
-                className="px-4 py-2 border border-white/10 text-white/60 hover:text-white rounded-xl transition-colors"
+                className="
+                  rounded-xl
+                  border border-white/10
+                  px-4 py-2
+                  text-white/60
+                  transition-colors
+                  hover:bg-white/5
+                  hover:text-white
+                "
               >
                 Cancelar
               </button>
+
               <button
+                type="button"
                 onClick={handleConfirmar}
-                className="px-6 py-2 bg-gradient-to-r from-[#E4002B] to-[#F5A300] text-white font-bold rounded-xl hover:shadow-lg hover:shadow-[#E4002B]/50 transition-all"
+                className="
+                  rounded-xl
+                  bg-gradient-to-r
+                  from-[#E4002B]
+                  to-[#F5A300]
+                  px-6 py-2
+                  font-bold text-white
+                  transition-all
+                  hover:shadow-lg
+                  hover:shadow-[#E4002B]/50
+                "
               >
                 Agregar al carrito
               </button>

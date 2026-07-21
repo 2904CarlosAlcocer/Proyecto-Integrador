@@ -40,6 +40,10 @@ const CajaDashboard = lazy(
   () => import('./pages/CajaDashboard')
 )
 
+const PerfilCliente = lazy(
+  () => import('./pages/PerfilCliente')
+)
+
 /*
 |--------------------------------------------------------------------------
 | PÁGINAS PÚBLICAS
@@ -245,6 +249,31 @@ function App() {
 
           {/*
           |--------------------------------------------------------------------------
+          | PERFIL DEL CLIENTE
+          |--------------------------------------------------------------------------
+          |
+          | Solo los usuarios autenticados con rol cliente
+          | pueden acceder a esta página.
+          |
+          */}
+
+          <Route
+            path="/perfil"
+            element={
+              <ProtectedRoute
+                rolesPermitidos={[
+                  'cliente',
+                ]}
+              >
+                <LayoutPublico>
+                  <PerfilCliente />
+                </LayoutPublico>
+              </ProtectedRoute>
+            }
+          />
+
+          {/*
+          |--------------------------------------------------------------------------
           | RUTAS DEL ADMINISTRADOR
           |--------------------------------------------------------------------------
           */}
@@ -281,7 +310,8 @@ function App() {
           |--------------------------------------------------------------------------
           |
           | Cocina puede entrar a esta ruta.
-          | El administrador también tendrá acceso automáticamente.
+          | El administrador también tendrá acceso automáticamente
+          | si ProtectedRoute permite al rol admin.
           |
           */}
 
@@ -304,7 +334,8 @@ function App() {
           |--------------------------------------------------------------------------
           |
           | Caja puede entrar a esta ruta.
-          | El administrador también tendrá acceso automáticamente.
+          | El administrador también tendrá acceso automáticamente
+          | si ProtectedRoute permite al rol admin.
           |
           */}
 

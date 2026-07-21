@@ -37,6 +37,12 @@ const useAuthStore = create((set) => ({
     usuarioInicial && tokenInicial
   ),
 
+  /*
+  |--------------------------------------------------------------------------
+  | INICIAR SESIÓN
+  |--------------------------------------------------------------------------
+  */
+
   login: (user, token) => {
     sessionStorage.setItem(
       USER_KEY,
@@ -54,6 +60,45 @@ const useAuthStore = create((set) => ({
       isAuthenticated: true,
     })
   },
+
+  /*
+  |--------------------------------------------------------------------------
+  | ACTUALIZAR USUARIO AUTENTICADO
+  |--------------------------------------------------------------------------
+  |
+  | Se utilizará después de editar el perfil.
+  | Mantiene el token actual y actualiza únicamente
+  | la información del usuario.
+  |
+  */
+
+  actualizarUsuario: (nuevosDatos) => {
+    set((state) => {
+      if (!state.user) {
+        return state
+      }
+
+      const usuarioActualizado = {
+        ...state.user,
+        ...nuevosDatos,
+      }
+
+      sessionStorage.setItem(
+        USER_KEY,
+        JSON.stringify(usuarioActualizado)
+      )
+
+      return {
+        user: usuarioActualizado,
+      }
+    })
+  },
+
+  /*
+  |--------------------------------------------------------------------------
+  | CERRAR SESIÓN
+  |--------------------------------------------------------------------------
+  */
 
   logout: () => {
     sessionStorage.removeItem(USER_KEY)

@@ -17,15 +17,38 @@ class DetallePedido extends Model
         'extras',
         'alergias',
         'observaciones',
+        'personalizacion',
     ];
 
-    public function producto()
+    protected function casts(): array
     {
-        return $this->belongsTo(Producto::class);
+        return [
+            'cantidad' => 'integer',
+            'precio_unitario' => 'decimal:2',
+            'subtotal' => 'decimal:2',
+            'personalizacion' => 'array',
+        ];
     }
 
+    /**
+     * Producto correspondiente a esta línea del pedido.
+     */
+    public function producto()
+    {
+        return $this->belongsTo(
+            Producto::class,
+            'producto_id'
+        );
+    }
+
+    /**
+     * Pedido al que pertenece esta línea.
+     */
     public function pedido()
     {
-        return $this->belongsTo(Pedido::class);
+        return $this->belongsTo(
+            Pedido::class,
+            'pedido_id'
+        );
     }
 }
