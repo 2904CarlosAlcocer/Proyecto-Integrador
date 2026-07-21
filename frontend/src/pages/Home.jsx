@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
-import { 
-  ChefHat, Flame, Users, Leaf, ArrowRight, Star, 
-  Menu, X, Award, Sparkles, MapPin, ShoppingCart 
+import {
+  ChefHat, Flame, Users, Leaf, ArrowRight, Star,
+  Menu, X, Award, Sparkles, MapPin, ShoppingCart
 } from 'lucide-react'
 import { useState } from 'react'
 import fondoPrincipal from '../assets/fondoPrincipal1.png'
@@ -10,9 +10,9 @@ import pasta from '../assets/pasta1.jpeg'
 import carne from '../assets/carne3.jpeg'
 
 // ========== IMPORTÁ TUS IMÁGENES PARA EL MENÚ ==========
-import menuInicio from '../assets/fondoPrincipal1.png'        
-import menuNosotros from '../assets/nosotros.jpeg'            
-import menuUbicacion from '../assets/mapa.jpeg' 
+import menuInicio from '../assets/fondoPrincipal1.png'
+import menuNosotros from '../assets/nosotros.jpeg'
+import menuUbicacion from '../assets/mapa.jpeg'
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -89,23 +89,24 @@ export default function Home() {
       </div>
 
       {/* ==================== HERO CON FONDO ==================== */}
-      <section
-        className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 py-16 sm:py-20 overflow-hidden bg-cover bg-center"
-        style={{
-          backgroundImage: `url(${fondoPrincipal})`,
-          backgroundAttachment: 'fixed',
-        }}
-      >
-        {/* Overlay oscuro sobre imagen de fondo */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/65 to-black/40 -z-10" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/60 to-[#120C08] -z-10" />
+      <section className="relative isolate min-h-[calc(100svh-72px)] md:min-h-screen flex items-center justify-center px-4 sm:px-6 py-12 sm:py-20 overflow-hidden bg-[#120C08]">
+        {/* Imagen separada del contenido para controlar mejor el responsive */}
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-[position:58%_center] bg-scroll md:bg-center md:bg-fixed"
+          style={{ backgroundImage: `url(${fondoPrincipal})` }}
+        />
+
+        {/* Capa oscura real: queda encima de la foto y debajo del contenido */}
+        <div className="absolute inset-0 z-[1] bg-black/50 sm:bg-black/35" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/50 via-black/35 to-black/20 sm:from-black/45 sm:via-black/30 sm:to-black/15" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-b from-transparent via-black/10 to-[#120C08]/85" />
 
         {/* Elementos decorativos */}
-        <div className="absolute top-20 right-10 w-96 h-96 bg-[#E4002B]/10 rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#F5A300]/5 rounded-full blur-3xl -z-10" />
+        <div className="absolute top-20 right-10 z-[2] w-72 h-72 sm:w-96 sm:h-96 bg-[#E4002B]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 z-[2] w-56 h-56 sm:w-72 sm:h-72 bg-[#F5A300]/5 rounded-full blur-3xl" />
 
         {/* ===== CHISPAS HERO (REDUCIDAS) ===== */}
-        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none z-[3] overflow-hidden">
           {sparks2.map((spark) => (
             <div
               key={`hero-spark-${spark.id}`}
@@ -124,7 +125,7 @@ export default function Home() {
         </div>
 
         {/* ===== BRASAS GRANDES (SOLO 3) ===== */}
-        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none z-[3] overflow-hidden">
           {[0, 1, 2].map((i) => (
             <div
               key={`braza-${i}`}
@@ -148,12 +149,12 @@ export default function Home() {
             {/* Logo */}
             <div className="flex items-center gap-2">
               <span className="text-2xl sm:text-3xl font-black">
-                
+
               </span>
             </div>
 
             {/* Carrito + Menú móvil */}
-            
+
           </div>
 
           {/* Menú Móvil Desplegable */}
@@ -191,9 +192,9 @@ export default function Home() {
         </nav>
 
         {/* ===== CONTENIDO DEL HERO ===== */}
-        <div className="max-w-6xl mx-auto w-full relative z-10 pt-16 sm:pt-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
-            <div className="space-y-6 sm:space-y-8">
+        <div className="max-w-6xl mx-auto w-full relative z-10 pt-6 sm:pt-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-7 sm:gap-8 md:gap-12 items-center">
+            <div className="space-y-5 sm:space-y-8">
               <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#E4002B]/20 border border-[#E4002B]/40 rounded-full w-fit">
                 <Flame className="w-3 h-3 sm:w-4 sm:h-4 text-[#F5A300]" />
                 <span className="text-xs sm:text-sm font-semibold text-[#F5A300]">
@@ -202,7 +203,7 @@ export default function Home() {
               </div>
 
               <div className="space-y-2 sm:space-y-4">
-                <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-black leading-[1.1] sm:leading-tight">
+                <h1 className="text-[clamp(2.5rem,12vw,3.35rem)] sm:text-6xl md:text-7xl font-black leading-[1.05] sm:leading-tight">
                   <span className="block text-white">Sabor que</span>
                   <span className="block text-white">se vive en</span>
                   <span className="block bg-gradient-to-r from-[#F5A300] via-[#E4002B] to-[#F5A300] bg-clip-text text-transparent">
@@ -211,7 +212,7 @@ export default function Home() {
                 </h1>
               </div>
 
-              <p className="text-sm sm:text-base md:text-lg text-white/90 max-w-lg leading-relaxed">
+              <p className="text-[15px] sm:text-base md:text-lg text-white/90 max-w-lg leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
                 Pizzas artesanales con masa de larga fermentación, pastas italianas auténticas y carnes premium en el corazón del Mercadito Arenal. Una experiencia gourmet que enamorará tus sentidos.
               </p>
 
@@ -232,7 +233,7 @@ export default function Home() {
                 </Link>
               </div>
 
-              <div className="flex gap-6 sm:gap-8 pt-6 sm:pt-8 border-t border-white/10">
+              <div className="grid grid-cols-3 gap-3 sm:flex sm:gap-8 pt-5 sm:pt-8 border-t border-white/10">
                 <div>
                   <p className="text-2xl sm:text-3xl font-bold text-[#F5A300]">16+</p>
                   <p className="text-white/60 text-xs sm:text-sm">Pizzas únicas</p>
@@ -425,7 +426,7 @@ export default function Home() {
                 <div className="absolute top-1/3 -right-3 w-1.5 h-1.5 bg-orange-500 rounded-full shadow-[0_0_12px_#ea580c] animate-bounce opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-400" />
 
                 <div className={`absolute -inset-1 bg-gradient-to-r ${item.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10`} />
-                
+
                 <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden hover:border-[#F5A300]/30 transition-all duration-500 h-full flex flex-col">
                   <div className="relative h-48 sm:h-56 lg:h-64 overflow-hidden">
                     <img
@@ -434,7 +435,7 @@ export default function Home() {
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#120C08] via-[#120C08]/60 to-transparent" />
-                    
+
                     <div className="absolute top-3 sm:top-4 right-3 sm:right-4 text-2xl sm:text-3xl opacity-70 group-hover:opacity-100 transition-opacity duration-300 transform group-hover:scale-110 group-hover:rotate-12">
                       {item.emoji}
                     </div>
@@ -478,7 +479,7 @@ export default function Home() {
       <section className="relative py-24 sm:py-32 px-4 sm:px-6 overflow-hidden">
         {/* Fondo premium */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0604] via-[#120C08] to-[#0a0604] -z-10" />
-        
+
         {/* Efectos de luz */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#F5A300]/5 rounded-full blur-[150px] -z-10" />
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[300px] bg-[#E4002B]/5 rounded-full blur-[120px] -z-10" />
@@ -513,20 +514,20 @@ export default function Home() {
               </span>
               <Sparkles className="w-4 h-4 text-[#F5A300]" />
             </div>
-            
+
             <h2 className="text-4xl xs:text-5xl sm:text-6xl font-light text-white tracking-tight">
               <span className="text-white">Explora</span>{' '}
               <span className="bg-gradient-to-r from-[#F5A300] via-[#E4002B] to-[#F5A300] bg-clip-text text-transparent">
                 Rooster
               </span>
             </h2>
-            
+
             <div className="flex justify-center gap-3 mt-6">
               <span className="w-16 h-0.5 bg-gradient-to-r from-transparent via-[#E4002B] to-[#F5A300] rounded-full" />
               <span className="w-2 h-2 bg-[#F5A300] rounded-full animate-pulse" />
               <span className="w-16 h-0.5 bg-gradient-to-r from-[#F5A300] via-[#E4002B] to-transparent rounded-full" />
             </div>
-            
+
             <p className="text-white/40 text-sm max-w-md mx-auto mt-6 font-light tracking-wide">
               Conoce todo lo que Rooster Pizza tiene para ti
             </p>
@@ -601,7 +602,7 @@ export default function Home() {
         </div>
       </section>
 
-      
+
       {/* ==================== CTA FINAL ==================== */}
       <section className="relative py-16 sm:py-24 px-4 sm:px-6 border-t border-white/10 text-center overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
@@ -638,7 +639,7 @@ export default function Home() {
             to="/menu"
             className="inline-block px-10 sm:px-12 py-4 sm:py-5 bg-gradient-to-r from-[#F5A300] to-[#E4002B] hover:shadow-2xl hover:shadow-[#F5A300]/50 text-black font-bold rounded-2xl transition-all duration-300 transform hover:scale-105 text-base sm:text-lg md:text-xl relative"
           >
-            ORDENAR AHORA 
+            ORDENAR AHORA
             <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-yellow-300 rounded-full shadow-[0_0_12px_#fde047] animate-ping" />
           </Link>
         </div>

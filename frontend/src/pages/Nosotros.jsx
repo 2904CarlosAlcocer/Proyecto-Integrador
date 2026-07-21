@@ -7,8 +7,8 @@ import {
 import { useState } from 'react'
 import fondoPrincipal from '../assets/nosotros.jpeg'
 // Importa tus imágenes locales
-import espacioImage from '../assets/mapa.jpeg' 
-import equipoImage from '../assets/nosotros.jpeg' 
+import espacioImage from '../assets/mapa.jpeg'
+import equipoImage from '../assets/nosotros.jpeg'
 
 export default function Nosotros() {
   const [activeTab, setActiveTab] = useState('mision')
@@ -56,50 +56,52 @@ export default function Nosotros() {
       </div>
 
       {/* ==================== HERO ==================== */}
-      <section
-        className="relative min-h-[60vh] flex items-center justify-center px-4 sm:px-6 py-20 overflow-hidden bg-cover bg-center"
-        style={{
-          backgroundImage: `url(${fondoPrincipal})`,
-          backgroundAttachment: 'fixed',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/75 to-black/60 -z-10" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/70 to-[#120C08] -z-10" />
+      <section className="relative isolate min-h-[540px] sm:min-h-[60vh] flex items-center justify-center px-4 sm:px-6 py-12 sm:py-20 overflow-hidden bg-[#120C08]">
+        {/* En móvil la imagen se desplaza normalmente; el fondo fijo queda solo para escritorio */}
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-[position:52%_center] bg-scroll md:bg-center md:bg-fixed"
+          style={{ backgroundImage: `url(${fondoPrincipal})` }}
+        />
 
-        <div className="absolute top-20 right-10 w-96 h-96 bg-[#E4002B]/15 rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#F5A300]/10 rounded-full blur-3xl -z-10" />
+        {/* Oscurecimiento uniforme para mejorar el contraste */}
+        <div className="absolute inset-0 z-[1] bg-black/55 sm:bg-black/40" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/50 via-black/35 to-black/20 sm:from-black/45 sm:via-black/30 sm:to-black/15" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-b from-transparent via-black/10 to-[#120C08]/85" />
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#E4002B]/30 border border-[#E4002B]/50 rounded-full w-fit mx-auto mb-6 backdrop-blur-sm">
+        <div className="absolute top-20 right-10 z-[2] w-64 h-64 sm:w-96 sm:h-96 bg-[#E4002B]/15 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 z-[2] w-52 h-52 sm:w-72 sm:h-72 bg-[#F5A300]/10 rounded-full blur-3xl" />
+
+        <div className="max-w-4xl mx-auto text-center relative z-10 w-full">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#E4002B]/30 border border-[#E4002B]/50 rounded-full w-fit mx-auto mb-4 sm:mb-6 backdrop-blur-md shadow-lg shadow-black/20">
             <Heart className="w-4 h-4 text-[#F5A300]" />
             <span className="text-sm font-semibold text-[#F5A300]">
               Nuestra historia
             </span>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black leading-tight mb-6">
+          <h1 className="text-[clamp(2.55rem,12vw,3.35rem)] sm:text-6xl md:text-7xl font-black leading-[1.05] sm:leading-tight mb-4 sm:mb-6">
             <span className="text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]">Conoce</span>
             <span className="block bg-gradient-to-r from-[#F5A300] via-[#E4002B] to-[#F5A300] bg-clip-text text-transparent drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
               Rooster Pizza
             </span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-white max-w-2xl mx-auto leading-relaxed drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+          <p className="text-base sm:text-xl text-white/95 max-w-2xl mx-auto leading-relaxed px-1 drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
             Rooster Pizza nace en el corazón de La Fortuna, en el Mercadito Arenal,
             con la pasión de ofrecer comida de calidad, ingredientes frescos y un
             ambiente único para compartir momentos inolvidables.
           </p>
 
-          <div className="flex flex-wrap justify-center gap-4 mt-8">
+          <div className="grid grid-cols-2 sm:flex justify-center gap-3 sm:gap-4 mt-6 sm:mt-8 max-w-md mx-auto">
             <Link
               to="/menu"
-              className="px-8 py-3 bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-2xl hover:shadow-[#E4002B]/50 rounded-xl font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg shadow-black/30"
+              className="w-full sm:w-auto px-5 sm:px-8 py-3 bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-2xl hover:shadow-[#E4002B]/50 rounded-xl font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg shadow-black/30"
             >
               Ver menú
             </Link>
             <Link
               to="/ubicacion"
-              className="px-8 py-3 border-2 border-[#F5A300] text-[#F5A300] hover:bg-[#F5A300]/10 rounded-xl font-bold text-sm transition-all duration-300 shadow-lg shadow-black/30"
+              className="w-full sm:w-auto px-5 sm:px-8 py-3 border-2 border-[#F5A300] text-[#F5A300] hover:bg-[#F5A300]/10 rounded-xl font-bold text-sm transition-all duration-300 shadow-lg shadow-black/30"
             >
               Visítanos
             </Link>
@@ -240,8 +242,8 @@ export default function Nosotros() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-6 sm:px-8 py-3 rounded-xl font-bold text-sm sm:text-base transition-all duration-300 flex items-center gap-2 ${activeTab === tab.id
-                    ? 'bg-gradient-to-r from-[#E4002B] to-[#F5A300] text-white shadow-lg shadow-[#E4002B]/30'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10'
+                  ? 'bg-gradient-to-r from-[#E4002B] to-[#F5A300] text-white shadow-lg shadow-[#E4002B]/30'
+                  : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10'
                   }`}
               >
                 <tab.icon className="w-4 h-4" />

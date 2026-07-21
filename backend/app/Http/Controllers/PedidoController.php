@@ -125,11 +125,11 @@ class PedidoController extends Controller
                         'productos',
                         'id'
                     )->where(
-                        fn ($query) => $query->where(
-                            'estado',
-                            'disponible'
-                        )
-                    ),
+                            fn($query) => $query->where(
+                                'estado',
+                                'disponible'
+                            )
+                        ),
                 ],
 
                 'productos.*.cantidad' => [
@@ -220,11 +220,7 @@ class PedidoController extends Controller
         */
 
         $pedido = DB::transaction(
-            function () use (
-                $validated,
-                $productos,
-                $request
-            ) {
+            function () use ($validated, $productos, $request) {
                 $total = 0;
                 $detalles = [];
 
@@ -275,7 +271,7 @@ class PedidoController extends Controller
                                     $item['extras']
                                 )
                             ),
-                            fn ($extra) => $extra !== ''
+                            fn($extra) => $extra !== ''
                         );
 
                         $cantidadExtras = count(
@@ -446,16 +442,16 @@ class PedidoController extends Controller
 
                 'estado_pago' =>
                     $metodo === 'sinpe'
-                        ? 'pendiente_comprobante'
-                        : 'no_requiere',
+                    ? 'pendiente_comprobante'
+                    : 'no_requiere',
 
                 'fecha' =>
                     now()->toDateTimeString(),
 
                 'cliente_nombre' =>
                     $pedido && $pedido->cliente
-                        ? $pedido->cliente->nombre
-                        : 'Sin cliente',
+                    ? $pedido->cliente->nombre
+                    : 'Sin cliente',
             ]
         );
     }
@@ -530,11 +526,11 @@ class PedidoController extends Controller
 
                 'cliente_nombre' =>
                     $pedido->cliente
-                        ? $pedido->cliente->nombre
-                        : (
-                            $item['cliente_nombre']
-                            ?? 'Sin cliente'
-                        ),
+                    ? $pedido->cliente->nombre
+                    : (
+                        $item['cliente_nombre']
+                        ?? 'Sin cliente'
+                    ),
 
                 'metodo_pago' =>
                     $item['metodo_pago'] ?? null,
@@ -735,11 +731,11 @@ class PedidoController extends Controller
 
                 'comprobante_url' =>
                     isset($metadata['comprobante'])
-                        ? asset(
-                            'storage/'
-                            . $metadata['comprobante']
-                        )
-                        : null,
+                    ? asset(
+                        'storage/'
+                        . $metadata['comprobante']
+                    )
+                    : null,
             ],
         ]);
     }

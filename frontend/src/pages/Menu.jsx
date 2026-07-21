@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { 
-  Flame, ArrowRight, Star, Sparkles, 
+import {
+  Flame, ArrowRight, Star, Sparkles,
   Pizza, Coffee, ChefHat, ShoppingCart,
   Search, Filter, Grid, List, Plus, Check
 } from 'lucide-react'
@@ -66,9 +66,9 @@ export default function Menu() {
   }, [])
 
   const productosFiltrados = productos.filter((producto) => {
-    const coincideCategoria = categoriaSeleccionada === 'todas' 
+    const coincideCategoria = categoriaSeleccionada === 'todas'
       || producto.categoria_id === parseInt(categoriaSeleccionada)
-    
+
     const coincideBusqueda = producto.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       producto.descripcion?.toLowerCase().includes(busqueda.toLowerCase())
 
@@ -96,7 +96,7 @@ export default function Menu() {
     }
 
     setAgregando(producto.id)
-    
+
     agregarProducto({
       id: producto.id,
       nombre: producto.nombre,
@@ -118,7 +118,7 @@ export default function Menu() {
     }
 
     setAgregando(itemPersonalizado.producto_id)
-    
+
     agregarProducto({
       id: itemPersonalizado.producto_id,
       nombre: itemPersonalizado.nombre,
@@ -131,7 +131,7 @@ export default function Menu() {
     })
 
     setProductoPersonalizando(null)
-    
+
     setTimeout(() => {
       setAgregando(null)
     }, 800)
@@ -166,42 +166,44 @@ export default function Menu() {
       </div>
 
       {/* HERO */}
-      <section
-        className="relative min-h-[50vh] flex items-center justify-center px-4 sm:px-6 py-20 overflow-hidden bg-cover bg-center"
-        style={{
-          backgroundImage: `url(${fondoPrincipal})`,
-          backgroundAttachment: 'fixed',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/75 to-black/60 -z-10" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/70 to-[#120C08] -z-10" />
-        <div className="absolute top-20 right-10 w-96 h-96 bg-[#E4002B]/15 rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#F5A300]/10 rounded-full blur-3xl -z-10" />
+      <section className="relative isolate min-h-[530px] sm:min-h-[50vh] flex items-center justify-center px-4 sm:px-6 py-12 sm:py-20 overflow-hidden bg-[#120C08]">
+        {/* Fondo responsive: sin background fixed en celulares para evitar zoom y saltos */}
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-[position:center_42%] bg-scroll md:bg-center md:bg-fixed"
+          style={{ backgroundImage: `url(${fondoPrincipal})` }}
+        />
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#E4002B]/30 border border-[#E4002B]/50 rounded-full w-fit mx-auto mb-6 backdrop-blur-sm">
+        {/* Capa oscura para que la comida acompañe el diseño sin competir con el texto */}
+        <div className="absolute inset-0 z-[1] bg-black/55 sm:bg-black/40" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/50 via-black/35 to-black/20 sm:from-black/45 sm:via-black/30 sm:to-black/15" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-b from-transparent via-black/10 to-[#120C08]/85" />
+        <div className="absolute top-20 right-10 z-[2] w-64 h-64 sm:w-96 sm:h-96 bg-[#E4002B]/15 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 z-[2] w-52 h-52 sm:w-72 sm:h-72 bg-[#F5A300]/10 rounded-full blur-3xl" />
+
+        <div className="max-w-4xl mx-auto text-center relative z-10 w-full">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#E4002B]/30 border border-[#E4002B]/50 rounded-full w-fit mx-auto mb-4 sm:mb-6 backdrop-blur-md shadow-lg shadow-black/20">
             <Pizza className="w-4 h-4 text-[#F5A300]" />
             <span className="text-sm font-semibold text-[#F5A300]">
               Nuestro menú
             </span>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black leading-tight mb-6">
+          <h1 className="text-[clamp(2rem,9.5vw,3rem)] sm:text-6xl md:text-7xl font-black leading-[1.05] sm:leading-tight mb-4 sm:mb-6">
             <span className="text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)]">Descubre</span>
-            <span className="block bg-gradient-to-r from-[#F5A300] via-[#E4002B] to-[#F5A300] bg-clip-text text-transparent drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+            <span className="block whitespace-nowrap bg-gradient-to-r from-[#F5A300] via-[#E4002B] to-[#F5A300] bg-clip-text text-transparent drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
               Nuestros sabores
             </span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-white max-w-2xl mx-auto leading-relaxed drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+          <p className="text-base sm:text-xl text-white/95 max-w-2xl mx-auto leading-relaxed px-1 drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]">
             Desde nuestras pizzas artesanales hasta las pastas caseras y carnes a la parrilla,
             cada platillo está preparado con ingredientes premium y mucha pasión.
           </p>
 
-          <div className="flex flex-wrap justify-center gap-4 mt-8">
+          <div className="flex flex-wrap justify-center gap-4 mt-6 sm:mt-8">
             <Link
               to="/carrito"
-              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-2xl hover:shadow-[#E4002B]/50 rounded-xl font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg shadow-black/30"
+              className="inline-flex items-center justify-center gap-2 w-full max-w-[220px] sm:w-auto sm:max-w-none px-8 py-3 bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-2xl hover:shadow-[#E4002B]/50 rounded-xl font-bold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg shadow-black/30"
             >
               <ShoppingCart size={16} />
               Ver carrito
@@ -238,11 +240,10 @@ export default function Menu() {
             <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto scrollbar-hide">
               <button
                 onClick={() => setCategoriaSeleccionada('todas')}
-                className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
-                  categoriaSeleccionada === 'todas'
+                className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${categoriaSeleccionada === 'todas'
                     ? 'bg-gradient-to-r from-[#E4002B] to-[#F5A300] text-white shadow-lg'
                     : 'bg-white/5 text-white/60 hover:text-white border border-white/10'
-                }`}
+                  }`}
               >
                 Todas
               </button>
@@ -250,11 +251,10 @@ export default function Menu() {
                 <button
                   key={cat.id}
                   onClick={() => setCategoriaSeleccionada(String(cat.id))}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
-                    categoriaSeleccionada === String(cat.id)
+                  className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${categoriaSeleccionada === String(cat.id)
                       ? 'bg-gradient-to-r from-[#E4002B] to-[#F5A300] text-white shadow-lg'
                       : 'bg-white/5 text-white/60 hover:text-white border border-white/10'
-                  }`}
+                    }`}
                 >
                   {cat.nombre}
                 </button>
@@ -264,17 +264,15 @@ export default function Menu() {
             <div className="flex bg-white/5 border border-white/10 rounded-xl p-1 shrink-0">
               <button
                 onClick={() => setVista('grid')}
-                className={`p-2 rounded-lg transition-all ${
-                  vista === 'grid' ? 'bg-[#E4002B] text-white' : 'text-white/40 hover:text-white'
-                }`}
+                className={`p-2 rounded-lg transition-all ${vista === 'grid' ? 'bg-[#E4002B] text-white' : 'text-white/40 hover:text-white'
+                  }`}
               >
                 <Grid size={16} />
               </button>
               <button
                 onClick={() => setVista('list')}
-                className={`p-2 rounded-lg transition-all ${
-                  vista === 'list' ? 'bg-[#E4002B] text-white' : 'text-white/40 hover:text-white'
-                }`}
+                className={`p-2 rounded-lg transition-all ${vista === 'list' ? 'bg-[#E4002B] text-white' : 'text-white/40 hover:text-white'
+                  }`}
               >
                 <List size={16} />
               </button>
@@ -334,7 +332,7 @@ export default function Menu() {
                               </div>
                             )}
                             <div className="absolute inset-0 bg-gradient-to-t from-[#120C08] via-[#120C08]/60 to-transparent" />
-                            
+
                             {esPizza && (
                               <div className="absolute top-2 left-2 bg-[#F5A300] text-black text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                                 🍕 Personalizable
@@ -353,7 +351,7 @@ export default function Menu() {
                             <h4 className="text-white font-bold text-xs sm:text-sm lg:text-base group-hover:text-[#F5A300] transition-colors line-clamp-2 min-h-[2.5rem] sm:min-h-[3rem]">
                               {producto.nombre}
                             </h4>
-                            
+
                             {producto.ingredientes_base && producto.ingredientes_base.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {producto.ingredientes_base.slice(0, 3).map((ing) => (
@@ -366,13 +364,13 @@ export default function Menu() {
                                 )}
                               </div>
                             )}
-                            
+
                             {producto.descripcion && (
                               <p className="text-white/40 text-[10px] sm:text-xs lg:text-sm mt-0.5 sm:mt-1 line-clamp-2 hidden sm:block">
                                 {producto.descripcion}
                               </p>
                             )}
-                            
+
                             <div className="flex items-center justify-between mt-2 sm:mt-3 pt-1.5 sm:pt-2 lg:pt-3 border-t border-white/5">
                               <span className="text-[#F5A300] font-bold font-mono text-xs sm:text-sm lg:text-lg whitespace-nowrap">
                                 ₡{parseFloat(producto.precio).toLocaleString('es-CR')}
@@ -380,13 +378,12 @@ export default function Menu() {
                               <button
                                 onClick={() => agregarAlCarrito(producto)}
                                 disabled={agregandoEste}
-                                className={`px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 rounded-lg text-white text-[9px] sm:text-[10px] lg:text-xs font-bold transition-all hover:scale-105 flex items-center gap-1 sm:gap-1.5 ${
-                                  enCarrito 
+                                className={`px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 rounded-lg text-white text-[9px] sm:text-[10px] lg:text-xs font-bold transition-all hover:scale-105 flex items-center gap-1 sm:gap-1.5 ${enCarrito
                                     ? 'bg-[#F5A300] text-black hover:bg-[#E4002B] hover:text-white'
                                     : esPizza
-                                    ? 'bg-gradient-to-r from-[#F5A300] to-[#E4002B] hover:shadow-lg hover:shadow-[#F5A300]/30'
-                                    : 'bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-lg hover:shadow-[#E4002B]/30'
-                                }`}
+                                      ? 'bg-gradient-to-r from-[#F5A300] to-[#E4002B] hover:shadow-lg hover:shadow-[#F5A300]/30'
+                                      : 'bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-lg hover:shadow-[#E4002B]/30'
+                                  }`}
                               >
                                 {agregandoEste ? (
                                   <>
@@ -484,13 +481,12 @@ export default function Menu() {
                             <button
                               onClick={() => agregarAlCarrito(producto)}
                               disabled={agregandoEste}
-                              className={`px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 rounded-lg text-white text-[9px] sm:text-[10px] lg:text-xs font-bold transition-all hover:scale-105 flex items-center gap-1 sm:gap-1.5 ${
-                                enCarrito 
+                              className={`px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 rounded-lg text-white text-[9px] sm:text-[10px] lg:text-xs font-bold transition-all hover:scale-105 flex items-center gap-1 sm:gap-1.5 ${enCarrito
                                   ? 'bg-[#F5A300] text-black hover:bg-[#E4002B] hover:text-white'
                                   : esPizza
-                                  ? 'bg-gradient-to-r from-[#F5A300] to-[#E4002B] hover:shadow-lg hover:shadow-[#F5A300]/30'
-                                  : 'bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-lg hover:shadow-[#E4002B]/30'
-                              }`}
+                                    ? 'bg-gradient-to-r from-[#F5A300] to-[#E4002B] hover:shadow-lg hover:shadow-[#F5A300]/30'
+                                    : 'bg-gradient-to-r from-[#E4002B] to-[#F5A300] hover:shadow-lg hover:shadow-[#E4002B]/30'
+                                }`}
                             >
                               {agregandoEste ? (
                                 <>
