@@ -134,6 +134,20 @@ class PedidoCasosExtremosTest extends TestCase
         );
     }
 
+    private function crearIngrediente(
+        string $nombre,
+        float $precioExtra = 1500,
+        string $estado = 'disponible'
+    ): int {
+        return DB::table('ingredientes')->insertGetId([
+            'nombre' => $nombre,
+            'precio_extra' => $precioExtra,
+            'estado' => $estado,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     private function datosPedido(
         int $clienteId,
         array $productos
@@ -513,6 +527,14 @@ class PedidoCasosExtremosTest extends TestCase
             ]
         );
 
+        $quesoExtraId = $this->crearIngrediente(
+            'Queso extra'
+        );
+
+        $tocinetaId = $this->crearIngrediente(
+            'Tocineta'
+        );
+
         /*
          * Primer producto:
          *
@@ -539,7 +561,10 @@ class PedidoCasosExtremosTest extends TestCase
                     [
                         'producto_id' => $pizzaId,
                         'cantidad' => 2,
-                        'extras' => 'Queso extra, Tocineta',
+                        'extras_ids' => [
+                            $quesoExtraId,
+                            $tocinetaId,
+                        ],
                     ],
                     [
                         'producto_id' => $bebidaId,

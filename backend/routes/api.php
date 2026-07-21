@@ -63,6 +63,43 @@ Route::get(
 
 /*
 |--------------------------------------------------------------------------
+| CLIENTES PÚBLICOS
+|--------------------------------------------------------------------------
+|
+| Estas consultas se mantienen públicas porque el carrito valida y consulta
+| clientes existentes antes de generar el pedido. La creación y edición de
+| clientes continúan siendo exclusivas del administrador.
+|
+*/
+
+Route::get(
+    '/clientes',
+    [ClienteController::class, 'index']
+);
+
+Route::get(
+    '/clientes/{cliente}',
+    [ClienteController::class, 'show']
+);
+
+/*
+|--------------------------------------------------------------------------
+| CREACIÓN PÚBLICA DE PEDIDOS
+|--------------------------------------------------------------------------
+|
+| El cliente puede confirmar un pedido desde el carrito sin iniciar sesión.
+| Laravel valida productos, disponibilidad, cantidades y precios en el
+| servidor antes de guardar el pedido.
+|
+*/
+
+Route::post(
+    '/pedidos',
+    [PedidoController::class, 'store']
+);
+
+/*
+|--------------------------------------------------------------------------
 | CONSULTA PÚBLICA DE PEDIDOS
 |--------------------------------------------------------------------------
 |
@@ -162,33 +199,6 @@ Route::middleware(
 
     /*
     |--------------------------------------------------------------------------
-    | CREACIÓN DE PEDIDOS
-    |--------------------------------------------------------------------------
-    |
-    | Pueden crear pedidos:
-    |
-    | - cliente: pedido desde Carrito.
-    | - caja: pedido presencial.
-    | - admin: pedido desde CajaDashboard.
-    |
-    | Cocina no puede crear pedidos.
-    |
-    */
-
-    Route::middleware(
-        'rol:admin,caja,cliente'
-    )->group(function () {
-        Route::post(
-            '/pedidos',
-            [
-                PedidoController::class,
-                'store',
-            ]
-        );
-    });
-
-    /*
-    |--------------------------------------------------------------------------
     | GESTIÓN DE PEDIDOS DEL PERSONAL
     |--------------------------------------------------------------------------
     */
@@ -209,44 +219,6 @@ Route::middleware(
             [
                 PedidoController::class,
                 'updateEstado',
-            ]
-        );
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLIENTES - ADMINISTRADOR Y CAJA
-    |--------------------------------------------------------------------------
-    |
-    | Los datos de todos los clientes no quedan expuestos públicamente.
-    | Caja puede buscar, consultar y registrar clientes presenciales.
-    |
-    */
-
-    Route::middleware(
-        'rol:admin,caja'
-    )->group(function () {
-        Route::get(
-            '/clientes',
-            [
-                ClienteController::class,
-                'index',
-            ]
-        );
-
-        Route::get(
-            '/clientes/{cliente}',
-            [
-                ClienteController::class,
-                'show',
-            ]
-        );
-
-        Route::post(
-            '/clientes',
-            [
-                ClienteController::class,
-                'store',
             ]
         );
     });
@@ -525,9 +497,17 @@ Route::middleware(
 
         /*
         |--------------------------------------------------------------------------
-        | EDICIÓN DE CLIENTES
+        | GESTIÓN DE CLIENTES
         |--------------------------------------------------------------------------
         */
+
+        Route::post(
+            '/clientes',
+            [
+                ClienteController::class,
+                'store',
+            ]
+        );
 
         Route::put(
             '/clientes/{cliente}',

@@ -42,23 +42,24 @@ class PedidoController extends Controller
     {
         /*
         |--------------------------------------------------------------------------
-        | USUARIO AUTENTICADO Y ORIGEN DEL PEDIDO
+        | AUTENTICACIÓN OPCIONAL Y ORIGEN DEL PEDIDO
         |--------------------------------------------------------------------------
+        |
+        | La creación del pedido permanece pública para conservar el flujo del
+        | carrito. Cuando existe un token Sanctum válido, se identifica al usuario
+        | para aplicar las reglas de cliente, caja o administrador.
+        |
         */
 
-        $usuario = $request->user();
+        $usuario = auth('sanctum')->user();
 
-        if (!$usuario) {
-            return response()->json([
-                'message' =>
-                    'Debes iniciar sesión para crear un pedido.',
-            ], 401);
-        }
-
-        $rol = $usuario->rolNormalizado();
+        $rol = $usuario
+            ? $usuario->rolNormalizado()
+            : null;
 
         if (
-            !in_array(
+            $usuario
+            && !in_array(
                 $rol,
                 [
                     'admin',
@@ -121,9 +122,14 @@ class PedidoController extends Controller
         |--------------------------------------------------------------------------
         | DETERMINAR CLIENTE, CANAL Y CREADOR
         |--------------------------------------------------------------------------
+        |
+        | - Cliente autenticado: se utiliza únicamente su perfil asociado.
+        | - Admin o caja: deben indicar el cliente atendido.
+        | - Pedido público: debe incluir un cliente_id existente.
+        |
         */
 
-        if ($rol === 'cliente') {
+        if ($usuario && $rol === 'cliente') {
             $cliente = $usuario
                 ->cliente()
                 ->first();
@@ -138,6 +144,7 @@ class PedidoController extends Controller
 
             $clienteId = $cliente->id;
             $canal = 'web';
+            $creadoPorUserId = $usuario->id;
         } else {
             if (empty($validated['cliente_id'])) {
                 throw ValidationException::withMessages([
@@ -150,10 +157,13 @@ class PedidoController extends Controller
             $clienteId =
                 (int) $validated['cliente_id'];
 
-            $canal = 'caja';
-        }
+            $canal = $usuario
+                ? 'caja'
+                : 'web';
 
-        $creadoPorUserId = $usuario->id;
+            $creadoPorUserId =
+                $usuario?->id;
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -290,7 +300,6 @@ class PedidoController extends Controller
 
                 'productos.*.acompanamientos_ids.*' => [
                     'integer',
-                    'distinct',
                 ],
 
                 'productos.*.observaciones' => [

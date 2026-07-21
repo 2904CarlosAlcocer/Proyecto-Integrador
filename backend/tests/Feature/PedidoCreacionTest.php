@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Ingrediente;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -92,11 +93,31 @@ class PedidoCreacionTest extends TestCase
             'updated_at' => now(),
         ]);
 
+        /*
+         * Los extras ahora se crean en la base de datos.
+         * El backend utiliza sus identificadores y precios reales,
+         * sin confiar en precios enviados por el cliente.
+         */
+        $quesoExtra = Ingrediente::create([
+            'nombre' => 'Queso extra',
+            'precio_extra' => 1500,
+            'estado' => 'disponible',
+        ]);
+
+        $tocineta = Ingrediente::create([
+            'nombre' => 'Tocineta',
+            'precio_extra' => 1500,
+            'estado' => 'disponible',
+        ]);
+
         $productos = [
             [
                 'producto_id' => $productoId,
                 'cantidad' => 2,
-                'extras' => 'Queso extra, Tocineta',
+                'extras_ids' => [
+                    $quesoExtra->id,
+                    $tocineta->id,
+                ],
                 'observaciones' => 'Sin cebolla',
             ],
         ];

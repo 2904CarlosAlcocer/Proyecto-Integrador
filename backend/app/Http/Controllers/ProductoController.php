@@ -325,7 +325,7 @@ class ProductoController extends Controller
 
         return response()->json([
             'message' =>
-                'Producto creado correctamente.',
+                'Producto creado correctamente',
 
             'producto' =>
                 $this->prepararProductos(
@@ -548,7 +548,7 @@ class ProductoController extends Controller
 
         return response()->json([
             'message' =>
-                'Producto actualizado correctamente.',
+                'Producto actualizado correctamente',
 
             'producto' =>
                 $this->prepararProductos(
@@ -578,7 +578,7 @@ class ProductoController extends Controller
 
         return response()->json([
             'message' =>
-                'Estado del producto actualizado.',
+                'Estado actualizado',
 
             'producto' =>
                 $this->prepararProductos(
