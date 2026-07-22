@@ -61,6 +61,37 @@ const normalizarExtrasIds = (extrasIds) => {
 
 /*
 |--------------------------------------------------------------------------
+| NORMALIZAR TAMAÑO DE PIZZA
+|--------------------------------------------------------------------------
+|
+| Solamente se aceptan:
+|
+| - grande
+| - personal
+|
+| Los productos que no son pizzas mantienen este valor en null.
+|
+*/
+
+const normalizarTamanoPizza = (tamano) => {
+  const valor = String(
+    tamano || ''
+  )
+    .trim()
+    .toLowerCase()
+
+  if (
+    valor === 'grande' ||
+    valor === 'personal'
+  ) {
+    return valor
+  }
+
+  return null
+}
+
+/*
+|--------------------------------------------------------------------------
 | NORMALIZAR PERSONALIZACIÓN DE PASTA
 |--------------------------------------------------------------------------
 |
@@ -136,6 +167,7 @@ const normalizarTexto = (valor) => {
 | Dos productos se combinan en una sola línea únicamente cuando tienen:
 |
 | - El mismo producto.
+| - El mismo tamaño de pizza.
 | - Los mismos extras de pizza.
 | - La misma composición de pasta.
 | - Los mismos acompañamientos en el mismo orden.
@@ -149,6 +181,11 @@ const crearLineaId = (producto) => {
       producto.producto_id ??
       producto.id
     ) ?? 0
+
+  const tamanoPizza =
+    normalizarTamanoPizza(
+      producto.tamano_pizza
+    )
 
   const extrasIds =
     normalizarExtrasIds(
@@ -172,6 +209,7 @@ const crearLineaId = (producto) => {
 
   return JSON.stringify({
     producto_id: productoId,
+    tamano_pizza: tamanoPizza,
     extras_ids: extrasIds,
     pasta,
     acompanamientos_ids:
@@ -240,6 +278,11 @@ const useCarritoStore = create(
             producto.precio
           ) || 0
 
+        const tamanoPizza =
+          normalizarTamanoPizza(
+            producto.tamano_pizza
+          )
+
         const extrasIds =
           normalizarExtrasIds(
             producto.extras_ids
@@ -261,6 +304,9 @@ const useCarritoStore = create(
 
             producto_id:
               productoId,
+
+            tamano_pizza:
+              tamanoPizza,
 
             extras_ids:
               extrasIds,
@@ -300,6 +346,9 @@ const useCarritoStore = create(
 
                         precio:
                           precioProducto,
+
+                        tamano_pizza:
+                          tamanoPizza,
 
                         extras:
                           producto.extras ??
@@ -373,6 +422,13 @@ const useCarritoStore = create(
             cantidadAgregar,
 
           /*
+           * Tamaño elegido dentro de PersonalizadorPizza.
+           * En productos que no son pizzas permanece en null.
+           */
+          tamano_pizza:
+            tamanoPizza,
+
+          /*
            * Personalización actual de pizzas.
            */
           extras:
@@ -425,8 +481,7 @@ const useCarritoStore = create(
     | El identificador correcto es linea_id.
     |
     | También acepta temporalmente el ID del producto
-    | para mantener compatibilidad con Carrito.jsx
-    | hasta actualizarlo en el siguiente paso.
+    | para mantener compatibilidad con Carrito.jsx.
     |
     */
 

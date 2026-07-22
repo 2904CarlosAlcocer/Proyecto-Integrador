@@ -27,6 +27,7 @@ import api from '../api/axios'
 
 export default function Carrito() {
   const navigate = useNavigate()
+
   useEffect(() => {
     window.scrollTo({
       top: 0,
@@ -279,12 +280,6 @@ export default function Carrito() {
   ) => {
     const detalles = []
 
-    if (item.extras) {
-      detalles.push(
-        `➕ Extras: ${item.extras}`
-      )
-    }
-
     const personalizacion =
       item.personalizacion &&
       typeof item.personalizacion ===
@@ -294,6 +289,33 @@ export default function Carrito() {
       )
         ? item.personalizacion
         : null
+
+    const tamanoPizza = String(
+      item.tamano_pizza ||
+      personalizacion?.tamano_pizza ||
+      ''
+    )
+      .trim()
+      .toLowerCase()
+
+    if (
+      tamanoPizza === 'grande' ||
+      tamanoPizza === 'personal'
+    ) {
+      detalles.push(
+        `🍕 Tamaño: ${
+          tamanoPizza === 'personal'
+            ? 'Personal'
+            : 'Grande'
+        }`
+      )
+    }
+
+    if (item.extras) {
+      detalles.push(
+        `➕ Extras: ${item.extras}`
+      )
+    }
 
     if (
       personalizacion?.tipo ===
@@ -462,11 +484,16 @@ export default function Carrito() {
       item.acompanamientos_ids
         .length > 0
 
+    const tieneTamanoPizza =
+      item.tamano_pizza === 'grande' ||
+      item.tamano_pizza === 'personal'
+
     return Boolean(
       item.extras ||
       item.observaciones ||
       tienePasta ||
       tieneAcompanamientos ||
+      tieneTamanoPizza ||
       item.personalizacion
     )
   }
@@ -669,6 +696,22 @@ export default function Carrito() {
                   Number(
                     item.cantidad
                   ) || 1,
+
+                /*
+                 * Tamaño elegido en el
+                 * personalizador de pizzas.
+                 *
+                 * Laravel validará el valor y
+                 * volverá a consultar el precio.
+                 */
+                tamano_pizza:
+                  item.tamano_pizza ===
+                  'personal'
+                    ? 'personal'
+                    : item.tamano_pizza ===
+                        'grande'
+                      ? 'grande'
+                      : null,
 
                 /*
                  * Personalización existente
@@ -1189,6 +1232,16 @@ export default function Carrito() {
                                 item.nombre
                               }
 
+                              {item.tamano_pizza && (
+                                <>
+                                  {' '}—{' '}
+                                  {item.tamano_pizza ===
+                                  'personal'
+                                    ? 'Personal'
+                                    : 'Grande'}
+                                </>
+                              )}
+
                               {tieneExtras(
                                 item
                               ) &&
@@ -1262,11 +1315,12 @@ export default function Carrito() {
                               'consumo_local'
                             )
                           }
-                          className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-bold ${modalidad ===
-                              'consumo_local'
+                          className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-bold ${
+                            modalidad ===
+                            'consumo_local'
                               ? 'border-[#F5A300] bg-[#F5A300]/10 text-[#F5A300]'
                               : 'border-white/10 text-white/60 hover:text-white'
-                            }`}
+                          }`}
                         >
                           <Clock
                             size={14}
@@ -1281,11 +1335,12 @@ export default function Carrito() {
                               'retiro'
                             )
                           }
-                          className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-bold ${modalidad ===
-                              'retiro'
+                          className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-sm font-bold ${
+                            modalidad ===
+                            'retiro'
                               ? 'border-[#F5A300] bg-[#F5A300]/10 text-[#F5A300]'
                               : 'border-white/10 text-white/60 hover:text-white'
-                            }`}
+                          }`}
                         >
                           <Truck
                             size={14}
@@ -1313,11 +1368,12 @@ export default function Carrito() {
                               null
                             )
                           }}
-                          className={`flex items-center justify-between rounded-xl border p-3 text-sm font-bold ${metodoPago ===
-                              'efectivo'
+                          className={`flex items-center justify-between rounded-xl border p-3 text-sm font-bold ${
+                            metodoPago ===
+                            'efectivo'
                               ? 'border-[#F5A300] bg-[#F5A300]/10 text-[#F5A300]'
                               : 'border-white/10 text-white/60 hover:text-white'
-                            }`}
+                          }`}
                         >
                           <span>
                             Efectivo
@@ -1339,11 +1395,12 @@ export default function Carrito() {
                               null
                             )
                           }}
-                          className={`flex items-center justify-between rounded-xl border p-3 text-sm font-bold ${metodoPago ===
-                              'tarjeta'
+                          className={`flex items-center justify-between rounded-xl border p-3 text-sm font-bold ${
+                            metodoPago ===
+                            'tarjeta'
                               ? 'border-[#F5A300] bg-[#F5A300]/10 text-[#F5A300]'
                               : 'border-white/10 text-white/60 hover:text-white'
-                            }`}
+                          }`}
                         >
                           <span>
                             Tarjeta
@@ -1361,11 +1418,12 @@ export default function Carrito() {
                               'sinpe'
                             )
                           }
-                          className={`flex items-center justify-between rounded-xl border p-3 text-sm font-bold ${metodoPago ===
-                              'sinpe'
+                          className={`flex items-center justify-between rounded-xl border p-3 text-sm font-bold ${
+                            metodoPago ===
+                            'sinpe'
                               ? 'border-[#F5A300] bg-[#F5A300]/10 text-[#F5A300]'
                               : 'border-white/10 text-white/60 hover:text-white'
-                            }`}
+                          }`}
                         >
                           <span>
                             SINPE Móvil
@@ -1431,14 +1489,15 @@ export default function Carrito() {
                     {/* MENSAJES */}
                     {mensaje && (
                       <div
-                        className={`mb-3 rounded-lg border px-3 py-2 text-sm font-medium ${mensaje.tipo ===
-                            'exito'
+                        className={`mb-3 rounded-lg border px-3 py-2 text-sm font-medium ${
+                          mensaje.tipo ===
+                          'exito'
                             ? 'border-[#C9E0B0] bg-[#EAF3DE] text-[#3B6D11]'
                             : mensaje.tipo ===
-                              'info'
+                                'info'
                               ? 'border-[#B0C4DE] bg-[#E8EEF7] text-[#3D5B8C]'
                               : 'border-[#F09595] bg-[#FCEBEB] text-[#A32D2D]'
-                          }`}
+                        }`}
                       >
                         {mensaje.texto}
                       </div>

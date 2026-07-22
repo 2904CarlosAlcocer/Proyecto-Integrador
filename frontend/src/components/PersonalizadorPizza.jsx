@@ -29,6 +29,43 @@ export default function PersonalizadorPizza({
 
   /*
   |--------------------------------------------------------------------------
+  | TAMAÑO DE LA PIZZA
+  |--------------------------------------------------------------------------
+  |
+  | precio:
+  | Precio de la pizza grande.
+  |
+  | precio_personal:
+  | Precio opcional de la pizza personal.
+  |
+  */
+
+  const tienePrecioPersonal =
+    Number(
+      producto?.precio_personal || 0
+    ) > 0
+
+  const [
+    tamanoSeleccionado,
+    setTamanoSeleccionado,
+  ] = useState('grande')
+
+  const precioBaseSeleccionado =
+    tamanoSeleccionado === 'personal' &&
+    tienePrecioPersonal
+      ? Number(
+          producto?.precio_personal || 0
+        )
+      : Number(producto?.precio || 0)
+
+  const nombreTamanoSeleccionado =
+    tamanoSeleccionado === 'personal' &&
+    tienePrecioPersonal
+      ? 'Personal'
+      : 'Grande'
+
+  /*
+  |--------------------------------------------------------------------------
   | SELECCIONAR O QUITAR UN INGREDIENTE EXTRA
   |--------------------------------------------------------------------------
   */
@@ -78,7 +115,6 @@ export default function PersonalizadorPizza({
   | CALCULAR PRECIO DE LOS EXTRAS
   |--------------------------------------------------------------------------
   |
-  | Ya no existe un precio fijo de ₡1.500.
   | Cada ingrediente utiliza precio_extra,
   | recibido desde la base de datos.
   |
@@ -104,14 +140,13 @@ export default function PersonalizadorPizza({
   */
 
   const calcularTotal = () => {
-    const precioBase = Number(
-      producto?.precio || 0
-    )
-
     const totalExtras =
       calcularTotalExtras()
 
-    return precioBase + totalExtras
+    return (
+      precioBaseSeleccionado +
+      totalExtras
+    )
   }
 
   /*
@@ -121,9 +156,13 @@ export default function PersonalizadorPizza({
   |
   | Se envían:
   |
+  | - tamano_pizza: grande o personal.
   | - extras: nombres para mostrarlos en el carrito.
   | - extras_ids: identificadores para que Laravel
   |   consulte nuevamente sus precios en la BD.
+  |
+  | El precio enviado por React es solamente visual.
+  | Laravel volverá a calcular el precio definitivo.
   |
   */
 
@@ -141,12 +180,26 @@ export default function PersonalizadorPizza({
         (extra) => extra.id
       )
 
+    const tamanoFinal =
+      tamanoSeleccionado === 'personal' &&
+      tienePrecioPersonal
+        ? 'personal'
+        : 'grande'
+
+    const nombreTamanoFinal =
+      tamanoFinal === 'personal'
+        ? 'Personal'
+        : 'Grande'
+
     onConfirmar({
       producto_id: producto.id,
       nombre: producto.nombre,
       precio: totalCalculado,
       cantidad: 1,
       imagen_url: producto.imagen_url,
+
+      tamano_pizza:
+        tamanoFinal,
 
       extras:
         nombresExtras || null,
@@ -158,6 +211,17 @@ export default function PersonalizadorPizza({
         observaciones.trim() || null,
 
       personalizacion: {
+        tipo: 'pizza',
+
+        tamano_pizza:
+          tamanoFinal,
+
+        tamano_texto:
+          nombreTamanoFinal,
+
+        precio_base:
+          precioBaseSeleccionado,
+
         extras:
           extrasSeleccionados,
 
@@ -202,14 +266,15 @@ export default function PersonalizadorPizza({
             flex items-center justify-between
           ">
             <div className="
-              flex items-center gap-3
+              flex min-w-0 items-center gap-3
             ">
               <Pizza className="
-                h-6 w-6
+                h-6 w-6 shrink-0
                 text-[#F5A300]
               " />
 
               <h2 className="
+                truncate
                 text-xl font-bold text-white
               ">
                 Personalizar{' '}
@@ -222,6 +287,7 @@ export default function PersonalizadorPizza({
               onClick={onCancelar}
               aria-label="Cerrar personalizador"
               className="
+                ml-3 shrink-0
                 rounded-lg p-1
                 text-white/40
                 transition-colors
@@ -233,32 +299,195 @@ export default function PersonalizadorPizza({
             </button>
           </div>
 
-          {/* PRECIO BASE */}
-          <div className="
-            mb-4
-            flex items-center justify-between
-            rounded-xl
-            border border-white/10
-            bg-black/20
-            p-3
-          ">
-            <span className="
-              text-sm text-white/60
-            ">
-              Precio de la pizza
-            </span>
+          {/* SELECCIÓN DE TAMAÑO */}
+          {tienePrecioPersonal ? (
+            <div className="mb-4">
+              <p className="
+                mb-2
+                text-xs font-bold
+                uppercase tracking-wide
+                text-white/60
+              ">
+                Selecciona el tamaño
+              </p>
 
-            <span className="
-              font-mono
-              text-sm font-bold
-              text-white
+              <div className="
+                grid grid-cols-1 gap-3
+                sm:grid-cols-2
+              ">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTamanoSeleccionado(
+                      'grande'
+                    )
+                  }
+                  className={`
+                    flex items-center
+                    justify-between
+                    rounded-xl
+                    border p-4
+                    text-left
+                    transition-all
+                    ${
+                      tamanoSeleccionado ===
+                      'grande'
+                        ? `
+                          border-[#F5A300]
+                          bg-[#F5A300]/10
+                          shadow-lg
+                          shadow-[#F5A300]/10
+                        `
+                        : `
+                          border-white/10
+                          bg-black/20
+                          hover:border-white/20
+                          hover:bg-white/5
+                        `
+                    }
+                  `}
+                >
+                  <span>
+                    <span className="
+                      block text-sm
+                      font-black text-white
+                    ">
+                      Grande
+                    </span>
+
+                    <span className="
+                      mt-0.5 block
+                      text-xs text-white/40
+                    ">
+                      Pizza de tamaño grande
+                    </span>
+                  </span>
+
+                  <span className="
+                    ml-3 whitespace-nowrap
+                    font-mono text-sm
+                    font-black text-[#F5A300]
+                  ">
+                    ₡
+                    {formatearPrecio(
+                      producto.precio
+                    )}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTamanoSeleccionado(
+                      'personal'
+                    )
+                  }
+                  className={`
+                    flex items-center
+                    justify-between
+                    rounded-xl
+                    border p-4
+                    text-left
+                    transition-all
+                    ${
+                      tamanoSeleccionado ===
+                      'personal'
+                        ? `
+                          border-[#F5A300]
+                          bg-[#F5A300]/10
+                          shadow-lg
+                          shadow-[#F5A300]/10
+                        `
+                        : `
+                          border-white/10
+                          bg-black/20
+                          hover:border-white/20
+                          hover:bg-white/5
+                        `
+                    }
+                  `}
+                >
+                  <span>
+                    <span className="
+                      block text-sm
+                      font-black text-white
+                    ">
+                      Personal
+                    </span>
+
+                    <span className="
+                      mt-0.5 block
+                      text-xs text-white/40
+                    ">
+                      Pizza individual
+                    </span>
+                  </span>
+
+                  <span className="
+                    ml-3 whitespace-nowrap
+                    font-mono text-sm
+                    font-black text-[#F5A300]
+                  ">
+                    ₡
+                    {formatearPrecio(
+                      producto.precio_personal
+                    )}
+                  </span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="
+              mb-4
+              flex items-center justify-between
+              rounded-xl
+              border border-white/10
+              bg-black/20
+              p-3
             ">
-              ₡
-              {formatearPrecio(
-                producto.precio
-              )}
-            </span>
-          </div>
+              <span className="
+                text-sm text-white/60
+              ">
+                Precio de la pizza
+              </span>
+
+              <span className="
+                font-mono
+                text-sm font-bold
+                text-white
+              ">
+                ₡
+                {formatearPrecio(
+                  producto.precio
+                )}
+              </span>
+            </div>
+          )}
+
+          {/* RESUMEN DEL TAMAÑO */}
+          {tienePrecioPersonal && (
+            <div className="
+              mb-4
+              flex items-center justify-between
+              rounded-xl
+              border border-[#F5A300]/20
+              bg-[#F5A300]/5
+              p-3
+            ">
+              <span className="
+                text-sm text-white/60
+              ">
+                Tamaño seleccionado
+              </span>
+
+              <span className="
+                text-sm font-bold
+                text-[#F5A300]
+              ">
+                {nombreTamanoSeleccionado}
+              </span>
+            </div>
+          )}
 
           {/* INGREDIENTES BASE */}
           {producto.ingredientes_base &&
@@ -581,22 +810,24 @@ export default function PersonalizadorPizza({
                 )}
               </p>
 
-              {extrasSeleccionados.length >
-                0 && (
-                <p className="
-                  mt-1 text-xs
-                  text-white/40
-                ">
-                  Incluye{' '}
-                  {
-                    extrasSeleccionados.length
-                  }{' '}
-                  {extrasSeleccionados.length ===
-                  1
-                    ? 'extra'
-                    : 'extras'}
-                </p>
-              )}
+              <p className="
+                mt-1 text-xs
+                text-white/40
+              ">
+                Tamaño{' '}
+                {nombreTamanoSeleccionado}
+                {extrasSeleccionados.length >
+                0
+                  ? ` · ${
+                      extrasSeleccionados.length
+                    } ${
+                      extrasSeleccionados.length ===
+                      1
+                        ? 'extra'
+                        : 'extras'
+                    }`
+                  : ''}
+              </p>
             </div>
 
             <div className="

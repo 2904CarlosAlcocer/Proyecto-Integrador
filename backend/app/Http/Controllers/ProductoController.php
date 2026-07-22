@@ -163,6 +163,18 @@ class ProductoController extends Controller
                     'max:99999999.99',
                 ],
 
+                /*
+                 * Precio opcional para pizzas personales.
+                 * Los productos con un solo precio pueden
+                 * mantener este campo en null.
+                 */
+                'precio_personal' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                    'max:99999999.99',
+                ],
+
                 'imagen' => [
                     'nullable',
                     'image',
@@ -239,6 +251,15 @@ class ProductoController extends Controller
                 'precio.max' =>
                     'El precio ingresado es demasiado alto.',
 
+                'precio_personal.numeric' =>
+                    'El precio personal debe ser un número válido.',
+
+                'precio_personal.min' =>
+                    'El precio personal no puede ser negativo.',
+
+                'precio_personal.max' =>
+                    'El precio personal ingresado es demasiado alto.',
+
                 'imagen.image' =>
                     'El archivo seleccionado debe ser una imagen.',
 
@@ -293,6 +314,9 @@ class ProductoController extends Controller
 
             'precio' =>
                 $datos['precio'],
+
+            'precio_personal' =>
+                $datos['precio_personal'] ?? null,
 
             'imagen' =>
                 $rutaImagen,
@@ -368,6 +392,18 @@ class ProductoController extends Controller
                     'max:99999999.99',
                 ],
 
+                /*
+                 * Precio opcional para pizzas personales.
+                 * Los productos con un solo precio pueden
+                 * mantener este campo en null.
+                 */
+                'precio_personal' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                    'max:99999999.99',
+                ],
+
                 'imagen' => [
                     'nullable',
                     'image',
@@ -434,6 +470,15 @@ class ProductoController extends Controller
                 'precio.max' =>
                     'El precio ingresado es demasiado alto.',
 
+                'precio_personal.numeric' =>
+                    'El precio personal debe ser un número válido.',
+
+                'precio_personal.min' =>
+                    'El precio personal no puede ser negativo.',
+
+                'precio_personal.max' =>
+                    'El precio personal ingresado es demasiado alto.',
+
                 'imagen.image' =>
                     'El archivo seleccionado debe ser una imagen.',
 
@@ -478,6 +523,26 @@ class ProductoController extends Controller
             'precio' =>
                 $datos['precio'],
         ];
+
+        /*
+         * El precio personal solamente se modifica
+         * cuando el formulario realmente lo envía.
+         *
+         * Esto evita borrarlo mientras todavía exista
+         * una versión anterior del Dashboard que no
+         * incluya este campo.
+         */
+        if (
+            $request->exists(
+                'precio_personal'
+            )
+        ) {
+            $datosProducto[
+                'precio_personal'
+            ] = $datos[
+                    'precio_personal'
+                ] ?? null;
+        }
 
         /*
          * El tipo solamente se modifica cuando
@@ -728,6 +793,7 @@ class ProductoController extends Controller
                  */
                 $producto->append([
                     'es_pizza',
+                    'tiene_precio_personal',
                     'es_pasta_personalizable',
                     'usa_acompanamientos',
                 ]);

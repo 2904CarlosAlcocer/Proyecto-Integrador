@@ -221,6 +221,27 @@ class PedidoController extends Controller
                 ],
 
                 /*
+                 * Tamaño seleccionado para las pizzas.
+                 *
+                 * - grande:
+                 *   Utiliza productos.precio.
+                 *
+                 * - personal:
+                 *   Utiliza productos.precio_personal.
+                 *
+                 * En productos que no son pizzas debe enviarse null.
+                 */
+                'productos.*.tamano_pizza' => [
+                    'nullable',
+                    'string',
+
+                    Rule::in([
+                        'grande',
+                        'personal',
+                    ]),
+                ],
+
+                /*
                  * Compatibilidad con la personalización actual de pizzas.
                  */
                 'productos.*.extras' => [
@@ -345,6 +366,12 @@ class PedidoController extends Controller
                 'productos.*.cantidad.min' =>
                     'La cantidad debe ser mayor o igual a uno.',
 
+                'productos.*.tamano_pizza.string' =>
+                    'El tamaño de la pizza no tiene un formato válido.',
+
+                'productos.*.tamano_pizza.in' =>
+                    'El tamaño de pizza seleccionado no es válido.',
+
                 'productos.*.extras.string' =>
                     'Los extras deben enviarse como texto.',
 
@@ -441,13 +468,25 @@ class PedidoController extends Controller
                         ->lockForUpdate()
                         ->firstOrFail();
 
-                    $precioBase =
-                        (float) $producto->precio;
-
                     $resultadoPersonalizacion =
                         $this->resolverPersonalizacionProducto(
                             $producto,
                             $item
+                        );
+
+                    /*
+                     * El precio base siempre se obtiene nuevamente
+                     * desde la base de datos.
+                     *
+                     * En una pizza personal utiliza precio_personal.
+                     * En cualquier otro caso utiliza precio.
+                     */
+                    $precioBase =
+                        (float) (
+                            $resultadoPersonalizacion[
+                                'precio_base'
+                            ]
+                            ?? $producto->precio
                         );
 
                     $precioUnitario = round(
@@ -483,6 +522,13 @@ class PedidoController extends Controller
                             'tipo_personalizacion' =>
                                 $producto
                                     ->tipo_personalizacion,
+
+                            'tamano_pizza' =>
+                                $resultadoPersonalizacion[
+                                    'personalizacion'
+                                ][
+                                    'tamano_pizza'
+                                ] ?? null,
 
                             'precio_base' =>
                                 $precioBase,
@@ -634,6 +680,27 @@ class PedidoController extends Controller
         $tipo = $producto
             ->tipo_personalizacion;
 
+        $tamanoPizza =
+            $item['tamano_pizza']
+            ?? null;
+
+        /*
+         * Solo una pizza puede recibir un tamaño.
+         * De esta forma un cliente no puede intentar
+         * aplicar el precio personal a otro producto.
+         */
+        if (
+            !$producto->es_pizza
+            && $tamanoPizza !== null
+            && $tamanoPizza !== ''
+        ) {
+            throw ValidationException::withMessages([
+                'productos' => [
+                    'El tamaño solamente puede seleccionarse en productos de la categoría Pizzas.',
+                ],
+            ]);
+        }
+
         if (
             $tipo ===
             Producto::PERSONALIZACION_PASTA
@@ -695,30 +762,25 @@ class PedidoController extends Controller
         );
 
         return $this->resolverExtrasActuales(
+            $producto,
             $item
         );
     }
 
     /*
     |--------------------------------------------------------------------------
-    | EXTRAS ACTUALES DE PIZZA
+    | EXTRAS Y TAMAÑO DE PIZZA
     |--------------------------------------------------------------------------
     */
 
     private function resolverExtrasActuales(
+        Producto $producto,
         array $item
     ): array {
         $ingredientesExtras =
             $this->resolverIngredientesExtras(
                 $item
             );
-
-        $texto = $ingredientesExtras
-            ->isNotEmpty()
-            ? $ingredientesExtras
-                ->pluck('nombre')
-                ->implode(', ')
-            : null;
 
         $totalAdicional = round(
             (float) $ingredientesExtras
@@ -732,19 +794,174 @@ class PedidoController extends Controller
             2
         );
 
+        /*
+         * Los productos normales conservan exactamente
+         * el comportamiento que tenían antes.
+         */
+        if (!$producto->es_pizza) {
+            $texto = $ingredientesExtras
+                ->isNotEmpty()
+                ? $ingredientesExtras
+                    ->pluck('nombre')
+                    ->implode(', ')
+                : null;
+
+            return [
+                'precio_base' =>
+                    (float) $producto->precio,
+
+                'texto' =>
+                    $texto,
+
+                'total_adicional' =>
+                    $totalAdicional,
+
+                'personalizacion' =>
+                    null,
+            ];
+        }
+
+        /*
+         * Para conservar compatibilidad con pedidos
+         * creados antes de este cambio, si no se recibe
+         * tamaño se utiliza grande.
+         */
+        $tamanoPizza =
+            $item['tamano_pizza']
+            ?? 'grande';
+
+        $tamanoPizza = strtolower(
+            trim(
+                (string) $tamanoPizza
+            )
+        );
+
+        if ($tamanoPizza === '') {
+            $tamanoPizza = 'grande';
+        }
+
+        if (
+            !in_array(
+                $tamanoPizza,
+                [
+                    'grande',
+                    'personal',
+                ],
+                true
+            )
+        ) {
+            throw ValidationException::withMessages([
+                'productos' => [
+                    'El tamaño de pizza seleccionado no es válido.',
+                ],
+            ]);
+        }
+
+        $precioBase =
+            (float) $producto->precio;
+
+        $tamanoTexto =
+            'Grande';
+
+        if ($tamanoPizza === 'personal') {
+            $precioPersonal =
+                $producto->precio_personal;
+
+            if (
+                $precioPersonal === null
+                || (float) $precioPersonal <= 0
+            ) {
+                throw ValidationException::withMessages([
+                    'productos' => [
+                        'La pizza seleccionada no cuenta con precio para tamaño personal.',
+                    ],
+                ]);
+            }
+
+            $precioBase =
+                (float) $precioPersonal;
+
+            $tamanoTexto =
+                'Personal';
+        }
+
+        $nombresExtras =
+            $ingredientesExtras
+                ->pluck('nombre')
+                ->values();
+
+        $partesTexto = [
+            'Tamaño: ' . $tamanoTexto,
+        ];
+
+        if ($nombresExtras->isNotEmpty()) {
+            $partesTexto[] =
+                'Extras: '
+                . $nombresExtras->implode(', ');
+        }
+
+        $extrasPersonalizacion =
+            $ingredientesExtras
+                ->map(
+                    function (
+                        Ingrediente $ingrediente
+                    ): array {
+                        return [
+                            'id' =>
+                                (int) $ingrediente->id,
+
+                            'nombre' =>
+                                $ingrediente->nombre,
+
+                            'precio_aplicado' =>
+                                (float) $ingrediente
+                                    ->precio_extra,
+                        ];
+                    }
+                )
+                ->values()
+                ->all();
+
         return [
+            'precio_base' =>
+                $precioBase,
+
+            /*
+             * Este texto queda disponible para cocina,
+             * caja y notificaciones existentes.
+             */
             'texto' =>
-                $texto,
+                implode(
+                    ' | ',
+                    $partesTexto
+                ),
 
             'total_adicional' =>
                 $totalAdicional,
 
             /*
-             * Las pizzas siguen utilizando extras y extras_ids.
-             * No se cambia su formato actual de almacenamiento.
+             * Fotografía exacta del tamaño, precio y extras
+             * aplicados al momento de crear el pedido.
              */
-            'personalizacion' =>
-                null,
+            'personalizacion' => [
+                'tipo' =>
+                    'pizza',
+
+                'tamano_pizza' =>
+                    $tamanoPizza,
+
+                'tamano_texto' =>
+                    $tamanoTexto,
+
+                'precio_base_aplicado' =>
+                    $precioBase,
+
+                'extras' =>
+                    $extrasPersonalizacion,
+
+                'total_adicional' =>
+                    $totalAdicional,
+            ],
         ];
     }
 

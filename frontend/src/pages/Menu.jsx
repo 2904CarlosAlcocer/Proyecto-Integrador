@@ -362,6 +362,7 @@ export default function Menu() {
       descripcion:
         producto.descripcion,
       cantidad: 1,
+      tamano_pizza: null,
       extras: null,
       extras_ids: [],
       pasta: null,
@@ -428,6 +429,17 @@ export default function Menu() {
             itemPersonalizado
               .cantidad
           ) || 1,
+
+        tamano_pizza:
+          itemPersonalizado
+            .tamano_pizza ===
+          'personal'
+            ? 'personal'
+            : itemPersonalizado
+                .tamano_pizza ===
+              'grande'
+              ? 'grande'
+              : null,
 
         extras:
           itemPersonalizado.extras ||
@@ -522,6 +534,22 @@ export default function Menu() {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       }
+    )
+  }
+
+  const tienePrecioPersonal = (
+    producto
+  ) => {
+    const precioPersonal = Number(
+      producto?.precio_personal
+    )
+
+    return Boolean(
+      producto?.es_pizza &&
+      Number.isFinite(
+        precioPersonal
+      ) &&
+      precioPersonal > 0
     )
   }
 
@@ -1434,21 +1462,62 @@ export default function Menu() {
                                   sm:pt-2
                                   lg:pt-3
                                 ">
-                                  <span className="
-                                    whitespace-nowrap
-                                    font-mono
-                                    text-xs
-                                    font-bold
-                                    text-[#F5A300]
-                                    sm:text-sm
-                                    lg:text-lg
-                                  ">
-                                    ₡
-                                    {formatearPrecio(
-                                      producto
-                                        .precio
-                                    )}
-                                  </span>
+                                  {tienePrecioPersonal(
+                                    producto
+                                  ) ? (
+                                    <div className="
+                                      flex flex-col
+                                      font-mono
+                                      leading-tight
+                                    ">
+                                      <span className="
+                                        whitespace-nowrap
+                                        text-[10px]
+                                        font-bold
+                                        text-[#F5A300]
+                                        sm:text-xs
+                                        lg:text-sm
+                                      ">
+                                        Grande ₡
+                                        {formatearPrecio(
+                                          producto
+                                            .precio
+                                        )}
+                                      </span>
+
+                                      <span className="
+                                        mt-0.5
+                                        whitespace-nowrap
+                                        text-[9px]
+                                        font-bold
+                                        text-white/60
+                                        sm:text-[11px]
+                                        lg:text-xs
+                                      ">
+                                        Personal ₡
+                                        {formatearPrecio(
+                                          producto
+                                            .precio_personal
+                                        )}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="
+                                      whitespace-nowrap
+                                      font-mono
+                                      text-xs
+                                      font-bold
+                                      text-[#F5A300]
+                                      sm:text-sm
+                                      lg:text-lg
+                                    ">
+                                      ₡
+                                      {formatearPrecio(
+                                        producto
+                                          .precio
+                                      )}
+                                    </span>
+                                  )}
 
                                   <button
                                     type="button"
@@ -1828,21 +1897,63 @@ export default function Menu() {
                                 gap-2
                                 sm:gap-4
                               ">
-                                <span className="
-                                  whitespace-nowrap
-                                  font-mono
-                                  text-xs
-                                  font-bold
-                                  text-[#F5A300]
-                                  sm:text-sm
-                                  lg:text-lg
-                                ">
-                                  ₡
-                                  {formatearPrecio(
-                                    producto
-                                      .precio
-                                  )}
-                                </span>
+                                {tienePrecioPersonal(
+                                  producto
+                                ) ? (
+                                  <div className="
+                                    flex flex-col
+                                    items-end
+                                    font-mono
+                                    leading-tight
+                                  ">
+                                    <span className="
+                                      whitespace-nowrap
+                                      text-[10px]
+                                      font-bold
+                                      text-[#F5A300]
+                                      sm:text-xs
+                                      lg:text-sm
+                                    ">
+                                      Grande ₡
+                                      {formatearPrecio(
+                                        producto
+                                          .precio
+                                      )}
+                                    </span>
+
+                                    <span className="
+                                      mt-0.5
+                                      whitespace-nowrap
+                                      text-[9px]
+                                      font-bold
+                                      text-white/60
+                                      sm:text-[11px]
+                                      lg:text-xs
+                                    ">
+                                      Personal ₡
+                                      {formatearPrecio(
+                                        producto
+                                          .precio_personal
+                                      )}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="
+                                    whitespace-nowrap
+                                    font-mono
+                                    text-xs
+                                    font-bold
+                                    text-[#F5A300]
+                                    sm:text-sm
+                                    lg:text-lg
+                                  ">
+                                    ₡
+                                    {formatearPrecio(
+                                      producto
+                                        .precio
+                                    )}
+                                  </span>
+                                )}
 
                                 <button
                                   type="button"

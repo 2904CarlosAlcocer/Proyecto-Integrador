@@ -8,7 +8,8 @@ class Producto extends Model
 {
     protected $table = 'productos';
 
-    public const PERSONALIZACION_PASTA = 'pasta';
+    public const PERSONALIZACION_PASTA =
+        'pasta';
 
     public const PERSONALIZACION_ACOMPANAMIENTOS =
         'acompanamientos';
@@ -17,7 +18,23 @@ class Producto extends Model
         'categoria_id',
         'nombre',
         'descripcion',
+
+        /*
+         * Precio normal del producto.
+         *
+         * En las pizzas representa el precio
+         * de la pizza grande.
+         */
         'precio',
+
+        /*
+         * Precio opcional para pizza personal.
+         *
+         * En carnes, pastas, bebidas y productos
+         * con un solo precio permanece en null.
+         */
+        'precio_personal',
+
         'imagen',
         'estado',
         'tipo_personalizacion',
@@ -26,7 +43,11 @@ class Producto extends Model
     protected function casts(): array
     {
         return [
-            'precio' => 'decimal:2',
+            'precio' =>
+                'decimal:2',
+
+            'precio_personal' =>
+                'decimal:2',
         ];
     }
 
@@ -80,6 +101,23 @@ class Producto extends Model
                 (string) $this->categoria->nombre
             )
         ) === 'pizzas';
+    }
+
+    /**
+     * Indica si la pizza cuenta con precio
+     * para tamaño personal.
+     */
+    public function getTienePrecioPersonalAttribute(): bool
+    {
+        if (!$this->es_pizza) {
+            return false;
+        }
+
+        if ($this->precio_personal === null) {
+            return false;
+        }
+
+        return (float) $this->precio_personal > 0;
     }
 
     /**
